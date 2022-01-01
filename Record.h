@@ -14,6 +14,8 @@ public:
 	Record(std::pair<double, double> input);
 	Record(const double& radius, const double& height);
 
+	void updateInput(const double& radius, const double& height);
+	void updateInput(Record record);
 	std::pair<double, double> getInput();
 	double getVolume();
 };

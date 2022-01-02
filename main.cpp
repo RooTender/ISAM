@@ -3,7 +3,7 @@
 
 int main()
 {
-	DBMS dbms = DBMS(4, 0.5, 0.2);
+	DBMS dbms = DBMS(4, 0.5, 0.8);
 	Record test = Record(1, 2);
 
 	dbms.insert(5, test);

@@ -72,7 +72,7 @@ private:
 	void setDeleteFlagInOverflow(uint32_t key, bool deleteFlag);
 	
 	// Returns pointer from overflow area
-	uint32_t insertToOverflow(uint32_t key, Record record, uint32_t pointer);
+	void insertToOverflow(uint32_t key, Record record, uint32_t& pointer);
 	void insertToBasePointer(uint32_t key, Record record);
 	void insertToPrimary(uint32_t key, Record record);
 

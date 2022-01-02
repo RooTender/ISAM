@@ -181,6 +181,9 @@ void DBMS::appendAreaRecord(std::ofstream& file, AreaRecord record)
 
 void DBMS::appendAreaRecordWithAlphaCorrection(std::ofstream& primary, std::ofstream& indexes, AreaRecord record, uint32_t& pageCounter)
 {
+	// Record won't point anything anymore
+	record.pointer = 0;
+
 	// Skip empty records
 	if (record.key == 0)
 	{
@@ -282,63 +285,66 @@ void DBMS::setDeleteFlagInOverflow(uint32_t key, bool deleteFlag)
 }
 
 
-uint32_t DBMS::insertToOverflow(uint32_t key, Record record, uint32_t pointer)
+void DBMS::insertToOverflow(uint32_t key, Record record, uint32_t& pointer)
 {
-	const size_t offset = sizeof(uint32_t) + 2 * sizeof(double);
-	uint32_t lastPointer = 0;
-
-	// Trace to the last pointer
-	if (pointer != 0)
+	// If pointer wasn't assigned, just append new record to overflow
+	if (pointer == 0)
 	{
 		this->diskOperations++;
-		std::ifstream input = std::ifstream(this->area.overflow, std::ifstream::binary);
+		std::ofstream output = std::ofstream(this->area.overflow, std::ofstream::binary | std::ofstream::app);
 
-		while (pointer != 0)
-		{
-			input.seekg(offset + (pointer - 1) * mainRecordSize, input.beg);
-
-			lastPointer = pointer;
-			input.read(reinterpret_cast<char*>(&pointer), sizeof(uint32_t));
-		}
-		input.close();
-	}
-
-	this->diskOperations++;
-	std::ofstream output = std::ofstream(this->area.overflow, std::ofstream::binary | std::ofstream::app);
-
-	// Insert new record to overflow
-	AreaRecord areaRecord = AreaRecord(key, record, 0, false);
-	this->appendAreaRecord(output, areaRecord);
-
-	this->area.length.overflow = this->getFileLength(output);
-	uint32_t newRecordLocation = this->area.length.overflow / this->mainRecordSize;
-
-	// If there was a sequence of pointers in overflow area
-	if (lastPointer != 0)
-	{
-		// Update last record from pointing sequence
-		output.seekp((lastPointer - 1) * mainRecordSize + offset, output.beg);
-		output.write(reinterpret_cast<char*>(&newRecordLocation), sizeof(uint32_t));
-		output.seekp(0, output.beg);
+		pointer = this->area.length.overflow / this->mainRecordSize + 1;
+		this->appendAreaRecord(output, AreaRecord(key, record, 0, false));
+		this->area.length.overflow = this->getFileLength(output);
 
 		output.close();
-		return 0;	// 0 means that the pointer to the last record is already written
+		return;
 	}
 
+	const size_t offset = sizeof(uint32_t) + 2 * sizeof(double);
+	AreaRecord currRecord, newRecord;
+	uint32_t prevPointer = 0, currPointer = pointer;
+
+	// Trace to the last pointer with a smaller key or just to the end
+	this->diskOperations++;
+	std::ifstream input = std::ifstream(this->area.overflow, std::ifstream::binary);
+
+	do
+	{
+		prevPointer = currPointer;
+		currRecord = this->getAreaRecord(input);
+	}
+	while (currRecord.key < key && currRecord.pointer != 0);
+	input.close();
+
+	this->diskOperations++;
+	std::ofstream output = std::ofstream(this->area.overflow, std::ofstream::binary | std::ofstream::in);
+
+	// Update record for consistent order
+	if (currRecord.key != 0 && currRecord.key > key)
+	{
+		newRecord = currRecord;
+		currRecord = AreaRecord(key, record, this->area.length.overflow / this->mainRecordSize + 1, false);
+	}
+	else
+	{
+		newRecord = AreaRecord(key, record, 0, false);
+		currRecord = AreaRecord(currRecord.key, currRecord.data, this->area.length.overflow / this->mainRecordSize + 1, currRecord.deleteFlag);
+	}
+
+	output.seekp((prevPointer - 1) * mainRecordSize, output.beg);
+	this->setAreaRecord(output, currRecord, prevPointer - 1);
+
+	output.seekp(0, output.end);
+	this->appendAreaRecord(output, newRecord);
+
+	this->area.length.overflow = this->getFileLength(output);
 	output.close();
-	return newRecordLocation;
 }
 
 void DBMS::insertToBasePointer(uint32_t key, Record record)
 {
-	if (this->basePointer == 0)
-	{
-		this->basePointer = this->insertToOverflow(key, record, 0);
-	}
-	else
-	{
-		this->insertToOverflow(key, record, this->basePointer);
-	}
+	this->insertToOverflow(key, record, this->basePointer);
 }
 
 void DBMS::insertToPrimary(uint32_t key, Record record)
@@ -372,11 +378,7 @@ void DBMS::insertToPrimary(uint32_t key, Record record)
 		}
 		else
 		{
-			const uint32_t pointerToOverflow = this->insertToOverflow(key, record, this->diskPage[i - 1].pointer);
-			if (pointerToOverflow != 0)
-			{
-				this->diskPage[i - 1].pointer = pointerToOverflow;
-			}
+			this->insertToOverflow(key, record, this->diskPage[i - 1].pointer);
 		}
 	}
 

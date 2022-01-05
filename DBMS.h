@@ -1,20 +1,17 @@
 #pragma once
 #include "Record.h"
 #include <string>
-#include <fstream>
 #include <iostream>
-#include <stdio.h>
-#include <errno.h>
 
 struct AreaRecord
 {
-	AreaRecord() {}
-	AreaRecord(uint32_t key, Record data, uint32_t pointer, bool deleteFlag)
+	AreaRecord()
 	{
-		this->key = key;
-		this->data = data;
-		this->pointer = pointer;
-		this->deleteFlag = deleteFlag;
+	}
+
+	AreaRecord(const uint32_t key, Record data, const uint32_t pointer, const bool deleteFlag) :
+		key(key), data(std::move(data)), pointer(pointer), deleteFlag(deleteFlag)
+	{
 	}
 
 	uint32_t key = 0;
@@ -23,16 +20,17 @@ struct AreaRecord
 	bool deleteFlag = false;
 };
 
-class DBMS
+using page = uint32_t;
+
+class Dbms
 {
-private:
 	struct Area
 	{
-		const std::string overflow	= "./overflow.bin";
-		const std::string index		= "./index.bin";
-		const std::string primary	= "./primary.bin";
+		const std::string overflow = "./overflow.bin";
+		const std::string index = "./index.bin";
+		const std::string primary = "./primary.bin";
 
-		struct Length 
+		struct Length
 		{
 			size_t overflow = 0;
 			size_t index = 0;
@@ -44,54 +42,62 @@ private:
 	const size_t indexRecordSize = sizeof(uint32_t);
 	AreaRecord* diskPage;
 
-	uint32_t
-		blockingFactor,
-		diskOperations,
-		basePointer, overflowPointer;// , diskPagePointer;
+	uint32_t blockingFactor;
+	uint32_t diskOperations = 0;
+	uint32_t basePointer = 0;
+
 	double alpha, maxOverflowOccupation;
 
-	bool isFileEmpty(std::ofstream& file);
-	size_t getFileLength(std::ifstream& file);
-	size_t getFileLength(std::ofstream& file);
-	void moveCursorToTheNextAreaRecord(std::ofstream& file);
+	static size_t getFileLength(std::ifstream& file);
+	static size_t getFileLength(std::ofstream& file);
+	void updateLengthData();
+	void backupBasePointer();
+	void recreateAreas(bool backup) const;
 
-	uint32_t getIndexRecord(std::ifstream& file, uint32_t index);
+	uint32_t getIndexRecord(std::ifstream& file, uint32_t index) const;
 	uint32_t binarySearchPage(uint32_t key);
 
-	AreaRecord getAreaRecord(std::ifstream& file);
-	AreaRecord getAreaRecord(std::ifstream& file, uint32_t index);
-	void appendAreaRecord(std::ofstream& file, AreaRecord record);
-	void appendAreaRecordWithAlphaCorrection(std::ofstream& primary, std::ofstream& indexes, AreaRecord record, uint32_t& pageCounter);
-	void appendAreaRecordsFromOverflow(std::ofstream& primary, std::ifstream& overflow, std::ofstream& indexes, uint32_t startIndex, uint32_t& pageCounter);
-	void setAreaRecord(std::ofstream& file, AreaRecord record, uint32_t index);
+	static AreaRecord getAreaRecord(std::ifstream& file);
+	AreaRecord getAreaRecord(std::ifstream& file, uint32_t index) const;
+	static void appendAreaRecord(std::ofstream& file, AreaRecord record);
+	void setAreaRecord(std::ofstream& file, AreaRecord record, uint32_t index) const;
 
+	bool isNextRecordOnCurrentPage(const uint32_t& pageAnchor, const uint32_t& pointerToNextRecord) const;
+	void getRawPage(const std::string& filename, const uint32_t& index, AreaRecord* dest);
+	void appendRawPage(const std::string& filename, const AreaRecord* src);
+	void appendPageWithAlphaCorrection(uint32_t& currOccupation);
+
+	std::pair<uint32_t, AreaRecord> findAreaRecordInOverflow(uint32_t key, uint32_t pointer);
+	AreaRecord findAreaRecord(uint32_t key);
+	bool updateAreaRecordInOverflow(uint32_t key, Record data, uint32_t startPointer);
+
+	void clearDiskPage() const;
 	uint32_t getDiskPage(uint32_t key);
 	void setDiskPage(uint32_t pageNo);
 
-	//std::pair<AreaRecord, uint32_t> getRecordWithIndexFromOverflow(uint32_t key, uint32_t pointingRecordIndex);
-	void setDeleteFlagInOverflow(uint32_t key, bool deleteFlag);
-	
-	// Returns pointer from overflow area
-	void insertToOverflow(uint32_t key, Record record, uint32_t& pointer);
+	void setToDeleteInOverflow(uint32_t key, uint32_t pointer);
+
+	void insertToOverflow(uint32_t key, Record record, uint32_t& startPointer);
 	void insertToBasePointer(uint32_t key, Record record);
 	void insertToPrimary(uint32_t key, Record record);
 
+	void fillRecordsFromOverflow(size_t& pointer, size_t& index);
+	void getPageToReorganize(uint32_t& lastPosition, uint32_t& lastPointer);
 	void reorganize();
 
 public:
-	DBMS(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
+	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
 
 	void update(bool forceUpdate = false);
 	void insert(uint32_t key, Record record);
 	void remove(uint32_t key);
 	void read(uint32_t key);
 
-	void printIndex();
-	void printPrimary();
-	void printDiskPage();
-	void printOverflow();
-	void printAll();
+	void printIndex() const;
+	void printPrimary() const;
+	void printDiskPage() const;
+	void printOverflow() const;
+	void printAll() const;
 
-	~DBMS();
+	~Dbms();
 };
-

@@ -3,19 +3,18 @@
 
 class Record
 {
-private:
-	static constexpr double PI = 3.141592653589793;
+	static constexpr double pi = 3.141592653589793;
 	std::pair<double, double> input;
 	double volume;
 
-	bool deleteFlag;
+	bool deleteFlag = false; // NOLINT(clang-diagnostic-unused-private-field)
 
 public:
-	Record(std::pair<double, double> input);
+	explicit Record(std::pair<double, double> input);
 	Record(const double& radius, const double& height);
 
 	void updateInput(const double& radius, const double& height);
 	void updateInput(Record record);
 	std::pair<double, double> getInput();
-	double getVolume();
+	double getVolume() const;
 };

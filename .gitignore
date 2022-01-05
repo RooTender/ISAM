@@ -5,3 +5,5 @@ ISAM.vcxproj.filters
 ISAM.vcxproj.user
 Debug
 *.bin
+*.old
+*.user

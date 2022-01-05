@@ -1,17 +1,16 @@
 #include "FileConverter.h"
 
-bool FileConverter::isTextfileValid(std::string filename)
+bool FileConverter::isTextfileValid(const std::string& filename)
 {
-	std::ifstream input = std::ifstream(filename);
+	auto input = std::ifstream(filename);
 	if (!input.is_open())
 	{
 		input.close();
 
 		throw std::runtime_error("Cannot open file! Is it used by another process?");
-		return false;
 	}
 
-	auto records = std::count
+	const auto records = std::count
 	(
 		std::istreambuf_iterator<char>(input),
 		std::istreambuf_iterator<char>(),
@@ -22,7 +21,6 @@ bool FileConverter::isTextfileValid(std::string filename)
 	if (records % 2 == 1)
 	{
 		throw std::runtime_error("Text file has contains odd number of records.");
-		return false;
 	}
 
 	return true;
@@ -35,19 +33,17 @@ bool FileConverter::areStreamsOpened(std::ifstream& input, std::ofstream& output
 		output.close();
 		input.close();
 		throw std::runtime_error("Cannot open files! Are they used by another process?");
-
-		return false;
 	}
 	return true;
 }
 
-std::string FileConverter::textToBinary(std::string filename)
+std::string FileConverter::textToBinary(std::string filename) const
 {
 	filename = this->directory + "/" + filename;
 
 	if (!isTextfileValid(filename))
 	{
-		throw "Text file is not valid.";
+		throw std::exception("Text file is not valid.");
 	}
 
 	auto inputName = filename + ".txt";
@@ -58,7 +54,7 @@ std::string FileConverter::textToBinary(std::string filename)
 
 	if (!areStreamsOpened(input, output))
 	{
-		throw "Cannot open IO streams.";
+		throw std::exception("Cannot open IO streams.");
 	}
 
 	double number;
@@ -73,7 +69,7 @@ std::string FileConverter::textToBinary(std::string filename)
 	return outputName;
 }
 
-std::string FileConverter::binaryToText(std::string filename)
+std::string FileConverter::binaryToText(std::string filename) const
 {
 	filename = this->directory + "/" + filename;
 	auto inputName = filename + ".bin";
@@ -84,7 +80,7 @@ std::string FileConverter::binaryToText(std::string filename)
 
 	if (!areStreamsOpened(input, output))
 	{
-		throw "Cannot open IO streams.";
+		throw std::exception("Cannot open IO streams.");
 	}
 
 	double number;

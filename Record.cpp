@@ -1,20 +1,17 @@
 #include "Record.h"
 
-Record::Record(std::pair<double, double> input)
+Record::Record(const std::pair<double, double> input) : input(input),
+                                                        volume(input.first * input.first * pi * input.second)
 {
-	this->input = input;
-	this->volume = input.first * input.first * this->PI * input.second;
 }
 
 Record::Record(const double& radius, const double& height) : Record(std::pair<double, double>{radius, height})
 {
-
 }
 
 void Record::updateInput(const double& radius, const double& height)
 {
-	this->input = input;
-	this->volume = input.first * input.first * this->PI * input.second;
+	this->volume = input.first * input.first * pi * input.second;
 }
 
 void Record::updateInput(Record record)
@@ -28,7 +25,7 @@ std::pair<double, double> Record::getInput()
 	return this->input;
 }
 
-double Record::getVolume()
+double Record::getVolume() const
 {
 	return this->volume;
 }

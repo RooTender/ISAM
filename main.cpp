@@ -1,24 +1,112 @@
+// ReSharper disable CppClangTidyConcurrencyMtUnsafe
 #include "DBMS.h"
+#include <random>
+
+void printLegend()
+{
+	std::cout << " == Instructions == " << std::endl;
+	std::cout << "Type 'I' <key> to insert or update record" << std::endl;
+	std::cout << "Type 'G' <amount> generate random keys" << std::endl;
+	std::cout << "Type 'D' <key> to delete record" << std::endl;
+	std::cout << "Type 'R' <key> to read record" << std::endl;
+	std::cout << "Type 'P' to print files data" << std::endl;
+	std::cout << "Type 'O' to print and reset disk operations count" << std::endl;
+	std::cout << "Type 'X' to reorganize files" << std::endl;
+	std::cout << "Type 'E' to exit program" << std::endl;
+}
 
 int main()
 {
-	auto dbms = Dbms(4, 0.5, 0.8);
-	const auto test = Record(1, 2);
+	srand(static_cast<unsigned>(time(nullptr)));  // NOLINT(cert-msc51-cpp)
 
-	dbms.insert(3, test);
-	dbms.printAll();
+	uint32_t blockingFactor;
+	double alpha, maxOverflowOccupation;
 
-	dbms.insert(2, test);
-	dbms.printAll();
+	std::cout << "Hubert Lewandowski 180348" << std::endl;
+	std::cout << "Blocking factor: ";
+	std::cin >> blockingFactor;
+	std::cout << "Alpha: ";
+	std::cin >> alpha;
+	std::cout << "Max overflow occupation: ";
+	std::cin >> maxOverflowOccupation;
 
-	dbms.insert(1, test);
-	dbms.printAll();
+	auto dbms = Dbms(blockingFactor, alpha, maxOverflowOccupation);
+	std::cout  << std::endl;
+	std::cout << "DBMS initialized!" << std::endl;
+	std::cout << "Interactive console initialized!" << std::endl;
+	std::cout  << std::endl;
+	printLegend();	
 
-	dbms.insert(4, test);
-	dbms.printAll();
+	auto exit = false;
+	while (!exit)
+	{
+		std::cout << std::endl;
 
-	dbms.printAll();
-	dbms.read(1);
+		char option;
+		std::cin >> option;
+		option = static_cast<char>(std::toupper(option));
+
+		uint32_t key;
+
+		if (option == 'I')
+		{
+			std::cin >> key;
+			dbms.insert(key, Record(rand() % 10, rand() % 10));
+		}
+
+		else if (option == 'G')
+		{
+			size_t amount;
+			std::cin >> amount;
+
+			std::cout << "Keys: ";
+			for (size_t i = 0; i < amount; ++i)
+			{
+				const auto newKey = rand() % amount + 1;
+				std::cout << newKey << ", ";
+				dbms.insert(newKey, Record(0, 0));
+			}
+			std::cout << std::endl;
+		}
+
+		else if (option == 'D')
+		{
+			std::cin >> key;
+			dbms.remove(key);
+		}
+
+		else if (option == 'R')
+		{
+			std::cin >> key;
+			dbms.read(key);
+		}
+
+		else if (option == 'P')
+		{
+			dbms.printAll();
+		}
+
+		else if (option == 'O')
+		{
+			dbms.printDiskOperations(true);
+		}
+
+		else if (option == 'X')
+		{
+			dbms.update(true);
+		}
+
+		else if (option == 'E')
+		{
+			exit = true;
+		}
+
+		else
+		{
+			std::cout << "Unknown command!" << std::endl;
+			printLegend();
+		}
+	}
 
 	return 0;
 }

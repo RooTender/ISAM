@@ -99,5 +99,7 @@ public:
 	void printOverflow() const;
 	void printAll() const;
 
+	void printDiskOperations(bool resetCounter);
+
 	~Dbms();
 };

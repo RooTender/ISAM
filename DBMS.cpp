@@ -256,8 +256,8 @@ void Dbms::appendPageWithAlphaCorrection(uint32_t& currOccupation)
 
 	while (diskPageIndex < blockingFactor)
 	{
-		// Skip empty keys
-		if (this->diskPage[diskPageIndex].key == 0)
+		// Skip empty keys & deleted keys
+		if (this->diskPage[diskPageIndex].key == 0 || this->diskPage[diskPageIndex].deleteFlag == true)
 		{
 			diskPageIndex++;
 			continue;
@@ -614,32 +614,38 @@ void Dbms::insertToPrimary(const uint32_t key, const Record record)
 void Dbms::fillRecordsFromOverflow(size_t& pointer, size_t& index)
 {
 	const auto auxPage = new AreaRecord[blockingFactor];
-	uint32_t overflowIndex = 0;
+	uint32_t overflowIndex = 0, anchor = pointer;
 
-	bool nextRecordInPage = false;
+	this->getRawPage("./overflow.old", pointer - 1, auxPage);
+
 	while (index < blockingFactor && pointer != 0)
 	{
-		if (!nextRecordInPage)
-		{
-			this->getRawPage("./overflow.old", pointer - 1, auxPage);
-		}
+		const uint32_t lastPointer = pointer;
+		pointer = auxPage[overflowIndex].pointer;
 
-		this->diskPage[index].key = auxPage[overflowIndex].key;
-		this->diskPage[index].data = auxPage[overflowIndex].data;
+		this->diskPage[index] = auxPage[overflowIndex];
+		this->diskPage[index].pointer = 0;
+		this->diskPage[index].deleteFlag = false;
 
 		// Determine necessity of next disk operation
-		if (this->isNextRecordOnCurrentPage(auxPage[index].pointer, pointer))
+		if (this->isNextRecordOnCurrentPage(anchor, pointer))
 		{
-			overflowIndex = 0;
-			nextRecordInPage = false;
+			overflowIndex = (pointer > lastPointer) ? pointer - lastPointer : lastPointer - pointer;
 		}
 		else
 		{
-			overflowIndex += auxPage[index].pointer - pointer;
-			nextRecordInPage = true;
+			// If it's already the last record, no need to get anymore pages
+			if (pointer == 0)
+			{
+				index++;
+				break;
+			}
+
+			this->getRawPage("./overflow.old", pointer - 1, auxPage);
+			anchor = auxPage[overflowIndex].pointer;
+			overflowIndex = 0;
 		}
 
-		pointer = auxPage[index].pointer;
 		index++;
 	}
 
@@ -677,6 +683,7 @@ void Dbms::getPageToReorganize(uint32_t& lastPosition, uint32_t& lastPointer)
 		{
 			this->diskPage[i].key = auxPage[primaryIterator].key;
 			this->diskPage[i].data = auxPage[primaryIterator].data;
+			this->diskPage[i].deleteFlag = auxPage[primaryIterator].deleteFlag;
 			lastPointer = auxPage[primaryIterator].pointer;
 		}
 		
@@ -692,6 +699,7 @@ void Dbms::getPageToReorganize(uint32_t& lastPosition, uint32_t& lastPointer)
 
 void Dbms::reorganize()
 {
+	std::cout << "Reorganizing!" << std::endl;
 	this->recreateAreas(true);
 
 	uint32_t lastPosition = 1;
@@ -921,11 +929,20 @@ void Dbms::printOverflow() const
 
 void Dbms::printAll() const
 {
+	std::cout << std::endl;
+
 	this->printIndex();
 	this->printPrimary();
 	this->printOverflow();
+}
 
-	std::cout << std::endl;
+void Dbms::printDiskOperations(const bool resetCounter)
+{
+	std::cout << "Disk operations: " << this->diskOperations << std::endl;
+	if (resetCounter)
+	{
+		this->diskOperations = 0;
+	}
 }
 
 Dbms::~Dbms()

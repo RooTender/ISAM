@@ -5,7 +5,9 @@
 void printLegend()
 {
 	std::cout << " == Instructions == " << std::endl;
-	std::cout << "Type 'I' <key> to insert or update record" << std::endl;
+	std::cout << "Type 'I' <key> to insert new record" << std::endl;
+	std::cout << "Type 'U' <key> to update record" << std::endl;
+	std::cout << "Type 'K' <old key> <new key> to update key of the record" << std::endl;
 	std::cout << "Type 'G' <amount> generate random keys" << std::endl;
 	std::cout << "Type 'D' <key> to delete record" << std::endl;
 	std::cout << "Type 'R' <key> to read record" << std::endl;
@@ -54,6 +56,21 @@ int main()
 			dbms.insert(key, Record(rand() % 10, rand() % 10));
 		}
 
+		else if (option == 'U')
+		{
+			std::cin >> key;
+			dbms.updateRecord(key, Record(rand() % 10, rand() % 10));
+		}
+
+		else if (option == 'K')
+		{
+			uint32_t newKey;
+
+			std::cin >> key;
+			std::cin >> newKey;
+			dbms.updateKey(key, newKey);
+		}
+
 		else if (option == 'G')
 		{
 			size_t amount;
@@ -93,7 +110,7 @@ int main()
 
 		else if (option == 'X')
 		{
-			dbms.update(true);
+			dbms.updateFileStructure(true);
 		}
 
 		else if (option == 'E')

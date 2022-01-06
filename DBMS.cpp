@@ -429,7 +429,7 @@ void Dbms::setDiskPage(const uint32_t pageNo)
 }
 
 
-void Dbms::setToDeleteInOverflow(const uint32_t key, const uint32_t pointer)
+AreaRecord Dbms::setToDeleteInOverflow(const uint32_t key, const uint32_t pointer)
 {
 	auto result = this->findAreaRecordInOverflow(key, pointer);
 
@@ -442,6 +442,12 @@ void Dbms::setToDeleteInOverflow(const uint32_t key, const uint32_t pointer)
 		this->setAreaRecord(file, result.second, result.first - 1);
 		file.close();
 	}
+	else
+	{
+		std::cout << "Record doesn't exist" << std::endl;
+	}
+
+	return result.second;
 }
 
 
@@ -477,7 +483,7 @@ void Dbms::insertToOverflow(uint32_t key, Record record, uint32_t& startPointer)
 		lastPointer = pointer;
 		pointer = auxPage[selectedIndex].pointer;
 
-		// If record already exist, just update it's data and turn off deleteFlag
+		// If record already exist, just updateFileStructure it's data and turn off deleteFlag
 		if (auxPage[selectedIndex].key == key)
 		{
 			alreadyInserted = true;
@@ -740,15 +746,11 @@ Dbms::Dbms(const uint32_t blockingFactor, const double alpha, const double maxOv
 }
 
 
-void Dbms::update(const bool forceUpdate)
+void Dbms::updateFileStructure(const bool forceUpdate)
 {
-	if (forceUpdate)
-	{
-		this->reorganize();
-	}
-
-	if (this->area.length.primary == 0 || this->area.length.overflow / static_cast<double>(this->area.length.primary) >=
-		maxOverflowOccupation)
+	if (this->area.length.primary == 0 || 
+		this->area.length.overflow / static_cast<double>(this->area.length.primary) >= maxOverflowOccupation ||
+		forceUpdate)
 	{
 		this->reorganize();
 	}
@@ -771,24 +773,88 @@ void Dbms::insert(const uint32_t key, const Record record)
 		this->insertToPrimary(key, record);
 	}
 
-	this->update();
+	this->updateFileStructure();
 }
 
-void Dbms::remove(const uint32_t key)
+void Dbms::updateRecord(const uint32_t key, const Record record)
 {
-	const uint32_t pageNo = this->getDiskPage(key);
+	const auto pageNo = this->getDiskPage(key);
 
-	for (size_t i = 0; i < blockingFactor; ++i)
+	bool isInserted = false;
+	size_t i;
+
+	for (i = 0; i < blockingFactor && !isInserted; ++i)
 	{
-		// Insert if there's space => record simply doesn't exist
+		// Insert if there's space
 		if (this->diskPage[i].key == 0)
 		{
+			std::cout << "Record doesn't exist!" << std::endl;
 			return;
 		}
 
-		// Insert record is empty that means it already doesn't exist
+		// Update data on the same key
 		if (this->diskPage[i].key == key)
 		{
+			this->diskPage[i].data = record;
+			this->diskPage[i].deleteFlag = false;
+			isInserted = true;
+		}
+
+		// Break if cannot fit in the record
+		else if (this->diskPage[i].key > key)
+		{
+			break;
+		}
+	}
+
+	if (!isInserted)
+	{
+		const auto recordInOverflow = this->findAreaRecordInOverflow(key, (i == 0) ? this->basePointer : this->diskPage[i - 1].pointer);
+		if (recordInOverflow.first != 0)
+		{
+			this->updateAreaRecordInOverflow(key, record, recordInOverflow.first);
+		}
+
+		std::cout << "Record doesn't exist!" << std::endl;
+	}
+	else
+	{
+		// We don't need to updateRecord the pointer in primary, no need to set the page
+		this->setDiskPage(pageNo);
+	}
+}
+
+void Dbms::updateKey(const uint32_t oldKey, const uint32_t newKey)
+{
+	const auto areaRecord = this->remove(oldKey);
+	if (areaRecord.key > 0)
+	{
+		this->insert(newKey, areaRecord.data);
+	}
+	else
+	{
+		std::cout << "Cannot update not existing record!" << std::endl;
+	}
+}
+
+AreaRecord Dbms::remove(const uint32_t key)
+{
+	const uint32_t pageNo = this->getDiskPage(key);
+	auto areaRecord = AreaRecord();
+
+	for (size_t i = 0; i < blockingFactor; ++i)
+	{
+		// If there's space => record simply doesn't exist
+		if (this->diskPage[i].key == 0)
+		{
+			std::cout << "Record doesn't exist!" << std::endl;
+			return areaRecord;
+		}
+
+		// Select record to delete
+		if (this->diskPage[i].key == key)
+		{
+			areaRecord = this->diskPage[i];
 			this->diskPage[i].deleteFlag = true;
 			break;
 		}
@@ -797,18 +863,19 @@ void Dbms::remove(const uint32_t key)
 		{
 			if (i == 0)
 			{
-				this->setToDeleteInOverflow(key, this->basePointer);
+				areaRecord = this->setToDeleteInOverflow(key, this->basePointer);
 			}
 			else
 			{
-				this->setToDeleteInOverflow(key, this->diskPage[i].pointer);
+				areaRecord = this->setToDeleteInOverflow(key, this->diskPage[i].pointer);
 			}
 
-			break;
+			return areaRecord;
 		}
 	}
 
 	this->setDiskPage(pageNo);
+	return areaRecord;
 }
 
 void Dbms::read(const uint32_t key)

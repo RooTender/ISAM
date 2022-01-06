@@ -75,7 +75,7 @@ class Dbms
 	uint32_t getDiskPage(uint32_t key);
 	void setDiskPage(uint32_t pageNo);
 
-	void setToDeleteInOverflow(uint32_t key, uint32_t pointer);
+	AreaRecord setToDeleteInOverflow(uint32_t key, uint32_t pointer);
 
 	void insertToOverflow(uint32_t key, Record record, uint32_t& startPointer);
 	void insertToBasePointer(uint32_t key, Record record);
@@ -88,9 +88,11 @@ class Dbms
 public:
 	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
 
-	void update(bool forceUpdate = false);
+	void updateFileStructure(bool forceUpdate = false);
 	void insert(uint32_t key, Record record);
-	void remove(uint32_t key);
+	void updateRecord(uint32_t key, Record record);
+	void updateKey(uint32_t oldKey, uint32_t newKey);
+	AreaRecord remove(uint32_t key);
 	void read(uint32_t key);
 
 	void printIndex() const;

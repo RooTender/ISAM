@@ -52,7 +52,7 @@ void Dbms::recreateAreas(const bool backup) const
 {
 	if (backup)
 	{
-		std::string filenamePrefixes[3] = { "./primary", "./overflow", "./index" };
+		std::string filenamePrefixes[3] = {"./primary", "./overflow", "./index"};
 		for (const auto& i : filenamePrefixes)
 		{
 			std::remove((i + ".old").c_str());
@@ -247,6 +247,19 @@ void Dbms::appendRawPage(const std::string& filename, const AreaRecord* src)
 	file.close();
 }
 
+void Dbms::updateRawPage(const std::string& string, const AreaRecord* auxPage, const uint32_t anchor)
+{
+	this->diskOperations++;
+	auto file = std::ofstream(string, std::ofstream::binary | std::ofstream::in);
+
+	for (size_t i = 0; i < blockingFactor; ++i)
+	{
+		if (auxPage[i].key != 0) {
+			this->setAreaRecord(file, auxPage[i], anchor + i);
+		}
+	}
+}
+
 void Dbms::appendPageWithAlphaCorrection(uint32_t& currOccupation)
 {
 	const auto auxPage = new AreaRecord[blockingFactor];
@@ -291,11 +304,19 @@ void Dbms::appendPageWithAlphaCorrection(uint32_t& currOccupation)
 			currOccupation = 0;
 		}
 	}
-	
+
 	currOccupation = (currOccupation < limit) ? currOccupation : 0;
 	if (!pageIsEmpty)
 	{
-		this->appendRawPage(this->area.primary, auxPage);
+		if (auxPage[0].key > 0)
+		{
+			this->appendRawPage(this->area.primary, auxPage);
+		}
+		else
+		{
+			this->updateLengthData();
+			this->updateRawPage(this->area.primary, auxPage, (this->area.length.index - 1) / this->indexRecordSize * blockingFactor);
+		}
 	}
 	delete[] auxPage;
 }
@@ -507,7 +528,7 @@ void Dbms::insertToOverflow(uint32_t key, Record record, uint32_t& startPointer)
 			// Update record with the inserted one
 			this->diskOperations++;
 			this->setAreaRecord(file,
-								AreaRecord(key, record, this->area.length.overflow / this->mainRecordSize + 1, false),
+			                    AreaRecord(key, record, this->area.length.overflow / this->mainRecordSize + 1, false),
 			                    lastPointer - 1);
 			file.close();
 			file = std::ofstream(this->area.overflow, std::ofstream::binary | std::ofstream::app);
@@ -549,7 +570,7 @@ void Dbms::insertToOverflow(uint32_t key, Record record, uint32_t& startPointer)
 
 		// Set pointer to the new record
 		this->diskOperations++;
-		this->setAreaRecord(file, recordToUpdate,lastPointer - 1);
+		this->setAreaRecord(file, recordToUpdate, lastPointer - 1);
 
 		file.close();
 		file = std::ofstream(this->area.overflow, std::ofstream::binary | std::ofstream::app);
@@ -692,7 +713,7 @@ void Dbms::getPageToReorganize(uint32_t& lastPosition, uint32_t& lastPointer)
 			this->diskPage[i].deleteFlag = auxPage[primaryIterator].deleteFlag;
 			lastPointer = auxPage[primaryIterator].pointer;
 		}
-		
+
 		primaryIterator++;
 		lastPosition++;
 	}
@@ -726,7 +747,8 @@ void Dbms::reorganize()
 
 
 Dbms::Dbms(const uint32_t blockingFactor, const double alpha, const double maxOverflowOccupation) :
-	diskPage(new AreaRecord[blockingFactor]), blockingFactor(blockingFactor), alpha(alpha), maxOverflowOccupation(maxOverflowOccupation)
+	diskPage(new AreaRecord[blockingFactor]), blockingFactor(blockingFactor), alpha(alpha),
+	maxOverflowOccupation(maxOverflowOccupation)
 {
 	this->recreateAreas(false);
 
@@ -748,7 +770,7 @@ Dbms::Dbms(const uint32_t blockingFactor, const double alpha, const double maxOv
 
 void Dbms::updateFileStructure(const bool forceUpdate)
 {
-	if (this->area.length.primary == 0 || 
+	if (this->area.length.primary == 0 ||
 		this->area.length.overflow / static_cast<double>(this->area.length.primary) >= maxOverflowOccupation ||
 		forceUpdate)
 	{
@@ -809,7 +831,8 @@ void Dbms::updateRecord(const uint32_t key, const Record record)
 
 	if (!isInserted)
 	{
-		const auto recordInOverflow = this->findAreaRecordInOverflow(key, (i == 0) ? this->basePointer : this->diskPage[i - 1].pointer);
+		const auto recordInOverflow = this->findAreaRecordInOverflow(
+			key, (i == 0) ? this->basePointer : this->diskPage[i - 1].pointer);
 		if (recordInOverflow.first != 0)
 		{
 			this->updateAreaRecordInOverflow(key, record, recordInOverflow.first);
@@ -826,6 +849,11 @@ void Dbms::updateRecord(const uint32_t key, const Record record)
 
 void Dbms::updateKey(const uint32_t oldKey, const uint32_t newKey)
 {
+	if (oldKey == newKey)
+	{
+		return;
+	}
+
 	const auto areaRecord = this->remove(oldKey);
 	if (areaRecord.key > 0)
 	{
@@ -883,7 +911,8 @@ void Dbms::read(const uint32_t key)
 	auto areaRecord = this->findAreaRecord(key);
 	if (areaRecord.key != 0)
 	{
-		std::cout << "Data: (" << areaRecord.data.getInput().first << ", " << areaRecord.data.getInput().second << ")" << std::endl;
+		std::cout << "Data: (" << areaRecord.data.getInput().first << ", " << areaRecord.data.getInput().second << ")"
+			<< std::endl;
 		std::cout << "Pointer: " << areaRecord.pointer << std::endl;
 		std::cout << "DeleteFlag: " << areaRecord.deleteFlag << std::endl;
 	}

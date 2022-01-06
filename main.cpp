@@ -19,7 +19,7 @@ void printLegend()
 
 int main()
 {
-	srand(static_cast<unsigned>(time(nullptr)));  // NOLINT(cert-msc51-cpp)
+	srand(static_cast<unsigned>(time(nullptr))); // NOLINT(cert-msc51-cpp)
 
 	uint32_t blockingFactor;
 	double alpha, maxOverflowOccupation;
@@ -33,11 +33,11 @@ int main()
 	std::cin >> maxOverflowOccupation;
 
 	auto dbms = Dbms(blockingFactor, alpha, maxOverflowOccupation);
-	std::cout  << std::endl;
+	std::cout << std::endl;
 	std::cout << "DBMS initialized!" << std::endl;
 	std::cout << "Interactive console initialized!" << std::endl;
-	std::cout  << std::endl;
-	printLegend();	
+	std::cout << std::endl;
+	printLegend();
 
 	auto exit = false;
 	while (!exit)

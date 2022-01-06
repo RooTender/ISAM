@@ -65,6 +65,7 @@ class Dbms
 	bool isNextRecordOnCurrentPage(const uint32_t& pageAnchor, const uint32_t& pointerToNextRecord) const;
 	void getRawPage(const std::string& filename, const uint32_t& index, AreaRecord* dest);
 	void appendRawPage(const std::string& filename, const AreaRecord* src);
+	void updateRawPage(const std::string& string, const AreaRecord* auxPage, uint32_t anchor);
 	void appendPageWithAlphaCorrection(uint32_t& currOccupation);
 
 	std::pair<uint32_t, AreaRecord> findAreaRecordInOverflow(uint32_t key, uint32_t pointer);

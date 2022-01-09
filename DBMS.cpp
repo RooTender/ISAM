@@ -118,7 +118,7 @@ uint32_t Dbms::binarySearchPage(const uint32_t key)
 			last = this->getIndexRecord(file, (pointer + 1) * indexPageSize - indexRecordSize);
 		}
 
-		if (first <= key && last >= key || !fullPageWasRead)
+		if (first <= key && last >= key || !fullPageWasRead || pointer == 0 && first > key)
 		{
 			file.seekg(pointer * indexPageSize, std::basic_ifstream<char>::beg);
 			do
@@ -344,12 +344,12 @@ std::pair<uint32_t, AreaRecord> Dbms::findAreaRecordInOverflow(const uint32_t ke
 
 		if (this->isNextRecordOnCurrentPage(anchor, pointer))
 		{
-			selectedIndex = (pointer > lastPointer) ? pointer - lastPointer : lastPointer - pointer;
+			selectedIndex = pointer - anchor;
 		}
 		else
 		{
 			this->getRawPage(this->area.overflow, pointer - 1, auxPage);
-			anchor = auxPage[0].pointer;
+			anchor = pointer;
 			selectedIndex = 0;
 		}
 	}
@@ -551,12 +551,12 @@ void Dbms::insertToOverflow(uint32_t key, Record record, uint32_t& startPointer)
 		// Update page if necessary to move to the next record
 		if (this->isNextRecordOnCurrentPage(anchor, pointer))
 		{
-			selectedIndex = (pointer > lastPointer) ? pointer - lastPointer : lastPointer - pointer;
+			selectedIndex = pointer - anchor;
 		}
 		else
 		{
 			this->getRawPage(this->area.overflow, pointer - 1, auxPage);
-			anchor = auxPage[0].pointer;
+			anchor = pointer;
 			selectedIndex = 0;
 		}
 	}
@@ -647,7 +647,6 @@ void Dbms::fillRecordsFromOverflow(size_t& pointer, size_t& index)
 
 	while (index < blockingFactor && pointer != 0)
 	{
-		const uint32_t lastPointer = pointer;
 		pointer = auxPage[overflowIndex].pointer;
 
 		this->diskPage[index] = auxPage[overflowIndex];
@@ -657,7 +656,7 @@ void Dbms::fillRecordsFromOverflow(size_t& pointer, size_t& index)
 		// Determine necessity of next disk operation
 		if (this->isNextRecordOnCurrentPage(anchor, pointer))
 		{
-			overflowIndex = (pointer > lastPointer) ? pointer - lastPointer : lastPointer - pointer;
+			overflowIndex = pointer - anchor;
 		}
 		else
 		{
@@ -669,7 +668,7 @@ void Dbms::fillRecordsFromOverflow(size_t& pointer, size_t& index)
 			}
 
 			this->getRawPage("./overflow.old", pointer - 1, auxPage);
-			anchor = auxPage[overflowIndex].pointer;
+			anchor = pointer;
 			overflowIndex = 0;
 		}
 

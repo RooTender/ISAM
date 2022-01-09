@@ -12,7 +12,7 @@ void printLegend()
 	std::cout << "Type 'D' <key> to delete record" << std::endl;
 	std::cout << "Type 'R' <key> to read record" << std::endl;
 	std::cout << "Type 'P' to print files data" << std::endl;
-	std::cout << "Type 'O' to print and reset disk operations count" << std::endl;
+	// std::cout << "Type 'O' to print and reset disk operations count" << std::endl; // DISABLED
 	std::cout << "Type 'X' to reorganize files" << std::endl;
 	std::cout << "Type 'E' to exit program" << std::endl;
 }
@@ -81,7 +81,7 @@ int main()
 			{
 				const auto newKey = rand() % amount + 1;
 				std::cout << newKey << ", ";
-				dbms.insert(newKey, Record(0, 0));
+				dbms.insert(newKey, Record(rand() % 10, rand() % 10));
 			}
 			std::cout << std::endl;
 		}
@@ -105,7 +105,8 @@ int main()
 
 		else if (option == 'O')
 		{
-			dbms.printDiskOperations(true);
+			// DISABLED
+			// dbms.printDiskOperations(true);
 		}
 
 		else if (option == 'X')
@@ -123,6 +124,9 @@ int main()
 			std::cout << "Unknown command!" << std::endl;
 			printLegend();
 		}
+
+		std::cout << std::endl;
+		dbms.printDiskOperations(false);
 	}
 
 	return 0;

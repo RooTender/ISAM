@@ -5,28 +5,6 @@
 
 #pragma warning( once : 4996 )
 
-size_t Dbms::GetFileLength(std::ifstream& file)
-{
-	const std::streampos currentPosition = file.tellg();
-
-	file.seekg(0, std::ifstream::end);
-	const std::streampos length = file.tellg();
-
-	file.seekg(currentPosition, std::ifstream::beg);
-	return static_cast<size_t>(length);
-}
-
-size_t Dbms::GetFileLength(std::ofstream& file)
-{
-	const std::streampos currentPosition = file.tellp();
-
-	file.seekp(0, std::ofstream::end);
-	const std::streampos length = file.tellp();
-
-	file.seekp(currentPosition, std::ofstream::beg);
-	return static_cast<size_t>(length);
-}
-
 void Dbms::UpdateLengthData()
 {
 	const std::string filename[3] = {this->area.primary, this->area.overflow, this->area.index};
@@ -35,7 +13,7 @@ void Dbms::UpdateLengthData()
 	for (size_t i = 0; i < 3; ++i)
 	{
 		auto file = std::ifstream(filename[i], std::ifstream::binary);
-		*lengthData[i] = this->GetFileLength(file);
+		*lengthData[i] = FileUtils::GetFileLength(file);
 		file.close();
 	}
 }
@@ -226,7 +204,7 @@ void Dbms::GetRawPage(const std::string& filename, const uint32_t& index, AreaRe
 {
 	this->diskOperations++;
 	auto file = std::ifstream(filename, std::ifstream::binary);
-	const auto maxPosition = this->GetFileLength(file) / mainRecordSize;
+	const auto maxPosition = FileUtils::GetFileLength(file) / mainRecordSize;
 
 	for (size_t i = 0; i < blockingFactor && index + i < maxPosition; ++i)
 	{
@@ -755,7 +733,7 @@ Dbms::Dbms(const uint32_t blockingFactor, const double alpha, const double maxOv
 
 	// Init base pointer first time if necessary
 	auto writeBasePointerFile = std::ofstream("basePointer.bin", std::ofstream::binary | std::ofstream::app);
-	if (this->GetFileLength(writeBasePointerFile) == 0)
+	if (FileUtils::GetFileLength(writeBasePointerFile) == 0)
 	{
 		writeBasePointerFile.write(reinterpret_cast<char*>(&this->basePointer), sizeof(uint32_t));
 	}
@@ -931,7 +909,7 @@ void Dbms::PrintIndex() const
 	std::cout << " === Index === " << std::endl;
 	std::cout << "key" << std::endl;
 
-	const size_t length = this->GetFileLength(file) / sizeof(uint32_t);
+	const size_t length = FileUtils::GetFileLength(file) / sizeof(uint32_t);
 
 	for (size_t i = 0; i < length; ++i)
 	{
@@ -952,7 +930,7 @@ void Dbms::PrintPrimary() const
 	std::cout << " === Primary === " << std::endl;
 	std::cout << "key\tdata\t\tpointer\tdelete" << std::endl;
 
-	const size_t length = this->GetFileLength(file) / mainRecordSize;
+	const size_t length = FileUtils::GetFileLength(file) / mainRecordSize;
 	for (size_t i = 0; i < length; ++i)
 	{
 		uint32_t key, pointer;
@@ -1004,7 +982,7 @@ void Dbms::PrintOverflow() const
 	std::cout << " === Overflow === " << std::endl;
 	std::cout << "key\tdata\t\tpointer\tdelete" << std::endl;
 
-	const size_t length = this->GetFileLength(file) / mainRecordSize;
+	const size_t length = FileUtils::GetFileLength(file) / mainRecordSize;
 	for (size_t i = 0; i < length; ++i)
 	{
 		uint32_t key, pointer;

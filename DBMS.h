@@ -48,8 +48,6 @@ class Dbms
 
 	double alpha, maxOverflowOccupation;
 
-	static size_t GetFileLength(std::ifstream& file);
-	static size_t GetFileLength(std::ofstream& file);
 	void UpdateLengthData();
 	void BackupBasePointer();
 	void RecreateAreas(bool backup) const;

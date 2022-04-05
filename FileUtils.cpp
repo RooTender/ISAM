@@ -1,1 +1,43 @@
 #include "FileUtils.h"
+
+void FileUtils::MoveCursorTo(const std::streampos position, std::ifstream& file)
+{
+	file.seekg(position, std::ifstream::beg);
+}
+
+void FileUtils::MoveCursorTo(const std::streampos position, std::ofstream& file)
+{
+	file.seekp(position, std::ofstream::beg);
+}
+
+void FileUtils::MoveCursorToTheEnd(std::ifstream& file)
+{
+	file.seekg(0, std::ifstream::end);
+}
+
+void FileUtils::MoveCursorToTheEnd(std::ofstream& file)
+{
+	file.seekp(0, std::ofstream::end);
+}
+
+size_t FileUtils::GetFileLength(std::ifstream& file)
+{
+	const std::streampos previousPosition = file.tellg();
+
+	MoveCursorToTheEnd(file);
+	const std::streampos length = file.tellg();
+
+	MoveCursorTo(previousPosition, file);
+	return static_cast<size_t>(length);
+}
+
+size_t FileUtils::GetFileLength(std::ofstream& file)
+{
+	const std::streampos previousPosition = file.tellp();
+
+	MoveCursorToTheEnd(file);
+	const std::streampos length = file.tellp();
+
+	MoveCursorTo(previousPosition, file);
+	return static_cast<size_t>(length);
+}

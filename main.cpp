@@ -53,13 +53,13 @@ int main()
 		if (option == 'I')
 		{
 			std::cin >> key;
-			dbms.insert(key, Record(rand() % 10, rand() % 10));
+			dbms.Insert(key, Record(rand() % 10, rand() % 10));
 		}
 
 		else if (option == 'U')
 		{
 			std::cin >> key;
-			dbms.updateRecord(key, Record(rand() % 10, rand() % 10));
+			dbms.UpdateRecord(key, Record(rand() % 10, rand() % 10));
 		}
 
 		else if (option == 'K')
@@ -68,7 +68,7 @@ int main()
 
 			std::cin >> key;
 			std::cin >> newKey;
-			dbms.updateKey(key, newKey);
+			dbms.UpdateKey(key, newKey);
 		}
 
 		else if (option == 'G')
@@ -81,7 +81,7 @@ int main()
 			{
 				const auto newKey = rand() % amount + 1;
 				std::cout << newKey << ", ";
-				dbms.insert(newKey, Record(rand() % 10, rand() % 10));
+				dbms.Insert(newKey, Record(rand() % 10, rand() % 10));
 			}
 			std::cout << std::endl;
 		}
@@ -89,18 +89,18 @@ int main()
 		else if (option == 'D')
 		{
 			std::cin >> key;
-			dbms.remove(key);
+			dbms.Remove(key);
 		}
 
 		else if (option == 'R')
 		{
 			std::cin >> key;
-			dbms.read(key);
+			dbms.Read(key);
 		}
 
 		else if (option == 'P')
 		{
-			dbms.printAll();
+			dbms.PrintAll();
 		}
 
 		else if (option == 'O')
@@ -111,7 +111,7 @@ int main()
 
 		else if (option == 'X')
 		{
-			dbms.updateFileStructure(true);
+			dbms.UpdateFileStructure(true);
 		}
 
 		else if (option == 'E')
@@ -126,7 +126,7 @@ int main()
 		}
 
 		std::cout << std::endl;
-		dbms.printDiskOperations(false);
+		dbms.PrintDiskOperations(false);
 	}
 
 	return 0;

@@ -715,11 +715,11 @@ Dbms::Dbms(const uint32_t blockingFactor, const double alpha, const double maxOv
 	diskPage(new AreaRecord[blockingFactor]), blockingFactor(blockingFactor), alpha(alpha),
 	maxOverflowOccupation(maxOverflowOccupation)
 {
-	this->RecreateAreas(false);
-
 	primaryArea.SetFilename(primaryAreaFilename);
 	overflowArea.SetFilename(overflowAreaFilename);
 	indexArea.SetFilename(indexAreaFilename);
+
+	this->RecreateAreas(false);
 
 	// Init base pointer first time if necessary
 	auto writeBasePointerFile = std::ofstream("basePointer.bin", std::ofstream::binary | std::ofstream::app);

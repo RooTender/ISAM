@@ -1,13 +1,13 @@
 #pragma once
+// ReSharper disable once CppUnusedIncludeDirective
+#include "FileUtils.h"
 #include "Record.h"
 #include <string>
 #include <iostream>
 
 struct AreaRecord
 {
-	AreaRecord()
-	{
-	}
+	AreaRecord() = default;
 
 	AreaRecord(const uint32_t key, Record data, const uint32_t pointer, const bool deleteFlag) :
 		key(key), data(std::move(data)), pointer(pointer), deleteFlag(deleteFlag)
@@ -20,9 +20,7 @@ struct AreaRecord
 	bool deleteFlag = false;
 };
 
-using page = uint32_t;
-
-class Dbms
+class Dbms final
 {
 	struct Area
 	{
@@ -40,7 +38,7 @@ class Dbms
 
 	const size_t mainRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
 	const size_t indexRecordSize = sizeof(uint32_t);
-	AreaRecord* diskPage;
+	AreaRecord* diskPage{};
 
 	uint32_t blockingFactor;
 	uint32_t diskOperations = 0;
@@ -86,6 +84,10 @@ class Dbms
 
 public:
 	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
+	Dbms(const Dbms&) = delete;
+	Dbms(Dbms&&) = delete;
+	Dbms& operator=(Dbms&& other) = delete;
+	Dbms& operator=(const Dbms&) = delete;
 
 	void UpdateFileStructure(bool forceUpdate = false);
 	void Insert(uint32_t key, Record record);

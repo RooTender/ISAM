@@ -1,9 +1,4 @@
-// ReSharper disable CppClangTidyClangDiagnosticShorten64To32
-// ReSharper disable CppRedundantCastExpression
 #include "DBMS.h"
-#include <fstream>
-
-#pragma warning( once : 4996 )
 
 void Dbms::UpdateLengthData()
 {
@@ -98,7 +93,8 @@ uint32_t Dbms::BinarySearchPage(const uint32_t key)
 
 		if (first <= key && last >= key || !fullPageWasRead || pointer == 0 && first > key)
 		{
-			file.seekg(pointer * indexPageSize, std::basic_ifstream<char>::beg);
+			const unsigned page = pointer * indexPageSize;
+			file.seekg(page, std::basic_ifstream<char>::beg);
 			do
 			{
 				file.read(reinterpret_cast<char*>(&indexPage[indexPageLength]), indexRecordSize);
@@ -164,12 +160,13 @@ AreaRecord Dbms::GetAreaRecord(std::ifstream& file)
 
 AreaRecord Dbms::GetAreaRecord(std::ifstream& file, const uint32_t index) const
 {
-	const std::streampos currPos = file.tellg();
+	const std::streampos currentPosition = file.tellg();
+	const unsigned selectedPage = index * mainRecordSize;
 
-	file.seekg(index * mainRecordSize, std::ifstream::beg);
+	file.seekg(selectedPage, std::ifstream::beg);
 	AreaRecord areaRecord = this->GetAreaRecord(file);
 
-	file.seekg(currPos);
+	file.seekg(currentPosition);
 
 	return areaRecord;
 }
@@ -190,7 +187,9 @@ void Dbms::AppendAreaRecord(std::ofstream& file, AreaRecord record)
 
 void Dbms::SetAreaRecord(std::ofstream& file, const AreaRecord record, const uint32_t index) const
 {
-	file.seekp(index * mainRecordSize, std::ofstream::beg);
+	const unsigned selectedPage = index * mainRecordSize;
+	file.seekp(selectedPage, std::ofstream::beg);
+
 	this->AppendAreaRecord(file, record);
 }
 
@@ -406,7 +405,9 @@ uint32_t Dbms::GetDiskPage(const uint32_t key)
 
 	this->diskOperations++;
 	auto file = std::ifstream(this->area.primary, std::ifstream::binary);
-	file.seekg((pageNo - 1) * mainRecordSize * blockingFactor, std::basic_ifstream<char>::beg);
+
+	const unsigned pageBeginningPosition = (pageNo - 1) * mainRecordSize * blockingFactor;
+	file.seekg(pageBeginningPosition, std::basic_ifstream<char>::beg);
 
 	for (size_t i = 0; i < blockingFactor; ++i)
 	{
@@ -710,13 +711,13 @@ void Dbms::Reorganize()
 
 	uint32_t lastPosition = 1;
 	uint32_t lastPointer = this->basePointer;
-	uint32_t currPageOccupancy = 0;
+	uint32_t currentPageOccupation = 0;
 
 	const uint32_t maxPosition = this->area.length.primary / mainRecordSize;
 	while (lastPosition < maxPosition || lastPointer > 0)
 	{
 		this->GetPageToReorganize(lastPosition, lastPointer);
-		this->AppendPageWithAlphaCorrection(currPageOccupancy);
+		this->AppendPageWithAlphaCorrection(currentPageOccupation);
 	}
 
 	this->basePointer = 0;

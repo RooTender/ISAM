@@ -3,5 +3,7 @@
 
 class OverflowArea : public Area
 {
+public:
+	using Area::Area;
 };
 

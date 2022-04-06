@@ -1,5 +1,6 @@
 // ReSharper disable CppClangTidyConcurrencyMtUnsafe
 #include "DBMS.h"
+#include "Record.h"
 #include <random>
 
 void printLegend()

@@ -2,37 +2,23 @@
 // ReSharper disable once CppUnusedIncludeDirective
 #include "FileUtils.h"
 #include "Areas.h"
-#include "Record.h"
+#include "AreaRecord.h"
 #include <iostream>
 
 
-struct AreaRecord
-{
-	AreaRecord() = default;
-
-	AreaRecord(const uint32_t key, Record data, const uint32_t pointer, const bool deleteFlag) :
-		key(key), data(std::move(data)), pointer(pointer), deleteFlag(deleteFlag)
-	{
-	}
-
-	uint32_t key = 0;
-	Record data = Record(0, 0);
-	uint32_t pointer = 0;
-	bool deleteFlag = false;
-};
-
 class Dbms final
 {
-	PrimaryArea primaryArea;
-	OverflowArea overflowArea;
-	IndexArea indexArea;
+	PrimaryArea* primaryArea = nullptr;
+	OverflowArea* overflowArea = nullptr;
+	IndexArea* indexArea = nullptr;
+
+	AreaRecord* diskPage = nullptr;
 
 	std::string basePointerFilename;
 
 	const size_t mainRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
 	const size_t indexRecordSize = sizeof(uint32_t);
-	AreaRecord* diskPage{};
-
+	
 	uint32_t blockingFactor;
 	uint32_t diskOperations = 0;
 	uint32_t basePointer = 0;
@@ -41,14 +27,13 @@ class Dbms final
 	
 	void BackupBasePointer();
 	void RecreateAreas(bool backup) const;
-	void UpdateAreasLength();
+	void UpdateAreasLength() const;
 
 	uint32_t GetIndexRecord(std::ifstream& file, uint32_t index) const;
-	uint32_t BinarySearchPage(uint32_t key);
-
+	
 	static AreaRecord GetAreaRecord(std::ifstream& file);
 	AreaRecord GetAreaRecord(std::ifstream& file, uint32_t index) const;
-	static void AppendAreaRecord(std::ofstream& file, AreaRecord record);
+	static void AppendAreaRecord(std::ofstream& file, const AreaRecord& record);
 	void SetAreaRecord(std::ofstream& file, AreaRecord record, uint32_t index) const;
 
 	bool IsNextRecordOnCurrentPage(const uint32_t& pageAnchor, const uint32_t& pointerToNextRecord) const;
@@ -60,10 +45,6 @@ class Dbms final
 	std::pair<uint32_t, AreaRecord> FindAreaRecordInOverflow(uint32_t key, uint32_t pointer);
 	AreaRecord FindAreaRecord(uint32_t key);
 	bool UpdateAreaRecordInOverflow(uint32_t key, Record data, uint32_t startPointer);
-
-	void ClearDiskPage() const;
-	uint32_t GetDiskPage(uint32_t key);
-	void SetDiskPage(uint32_t pageNo);
 
 	AreaRecord SetToDeleteInOverflow(uint32_t key, uint32_t pointer);
 

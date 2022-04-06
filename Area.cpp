@@ -1,5 +1,11 @@
 #include "Area.h"
 
+Area::Area(std::string filename, size_t areaRecordSize) : filename(std::move(filename)), recordSize(areaRecordSize)
+{
+	FileUtils::CreateFile(filename, false);
+	this->UpdateLength();
+}
+
 void Area::SetFilename(std::string name)
 {
 	this->filename = std::move(name);
@@ -21,4 +27,9 @@ void Area::UpdateLength()
 size_t Area::GetLength() const
 {
 	return this->length;
+}
+
+size_t Area::GetRecordSize() const
+{
+	return this->recordSize;
 }

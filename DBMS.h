@@ -1,9 +1,10 @@
 #pragma once
 // ReSharper disable once CppUnusedIncludeDirective
 #include "FileUtils.h"
+#include "Areas.h"
 #include "Record.h"
-#include <string>
 #include <iostream>
+
 
 struct AreaRecord
 {
@@ -22,19 +23,11 @@ struct AreaRecord
 
 class Dbms final
 {
-	struct Area
-	{
-		const std::string overflow = "./overflow.bin";
-		const std::string index = "./index.bin";
-		const std::string primary = "./primary.bin";
+	PrimaryArea primaryArea;
+	OverflowArea overflowArea;
+	IndexArea indexArea;
 
-		struct Length
-		{
-			size_t overflow = 0;
-			size_t index = 0;
-			size_t primary = 0;
-		} length;
-	} area;
+	std::string basePointerFilename;
 
 	const size_t mainRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
 	const size_t indexRecordSize = sizeof(uint32_t);
@@ -45,10 +38,10 @@ class Dbms final
 	uint32_t basePointer = 0;
 
 	double alpha, maxOverflowOccupation;
-
-	void UpdateLengthData();
+	
 	void BackupBasePointer();
 	void RecreateAreas(bool backup) const;
+	void UpdateAreasLength();
 
 	uint32_t GetIndexRecord(std::ifstream& file, uint32_t index) const;
 	uint32_t BinarySearchPage(uint32_t key);
@@ -83,7 +76,8 @@ class Dbms final
 	void Reorganize();
 
 public:
-	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
+	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation,
+		const std::string& primaryAreaFilename, const std::string& overflowAreaFilename, const std::string& indexAreaFilename);
 	Dbms(const Dbms&) = default;
 	Dbms(Dbms&&) = default;
 	Dbms& operator=(Dbms&& other) = delete;

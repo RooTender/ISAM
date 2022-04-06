@@ -20,6 +20,11 @@ void FileUtils::MoveCursorToTheEnd(std::ofstream& file)
 	file.seekp(0, std::ofstream::end);
 }
 
+std::string FileUtils::GetFilenameWithoutExtenstion(const std::string& filename)
+{
+	return filename.substr(0, filename.find_last_of('.'));
+}
+
 size_t FileUtils::GetFileLength(std::ifstream& file)
 {
 	const std::streampos previousPosition = file.tellg();
@@ -40,4 +45,29 @@ size_t FileUtils::GetFileLength(std::ofstream& file)
 
 	MoveCursorTo(previousPosition, file);
 	return static_cast<size_t>(length);
+}
+
+void FileUtils::ChangeFileExtension(const std::string& filename, const std::string& newExtenstion)
+{
+	const std::string fileWithoutExtension = GetFilenameWithoutExtenstion(filename);
+	if (std::rename(filename.c_str(), (fileWithoutExtension + newExtenstion).c_str()) != 0)
+	{
+		throw std::runtime_error("Failed to rename file!");
+	}
+}
+
+void FileUtils::CreateFile(const std::string& filename, bool recreateIfExists)
+{
+	std::ifstream file;
+
+	if (recreateIfExists)
+	{
+		file = std::ifstream(filename, std::ifstream::binary);
+	}
+	else
+	{
+		file = std::ifstream(filename, std::ifstream::binary | std::ifstream::app);
+	}
+	
+	file.close();
 }

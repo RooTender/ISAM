@@ -1,5 +1,7 @@
 #pragma once
-class PrimaryArea
+#include "Area.h"
+
+class PrimaryArea : public Area
 {
 };
 

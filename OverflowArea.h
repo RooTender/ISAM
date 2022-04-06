@@ -1,5 +1,7 @@
 #pragma once
-class OverflowArea
+#include "Area.h"
+
+class OverflowArea : public Area
 {
 };
 

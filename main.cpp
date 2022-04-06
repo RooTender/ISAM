@@ -32,7 +32,8 @@ int main()
 	std::cout << "Max overflow occupation: ";
 	std::cin >> maxOverflowOccupation;
 
-	auto dbms = Dbms(blockingFactor, alpha, maxOverflowOccupation);
+	auto dbms = Dbms(blockingFactor, alpha, maxOverflowOccupation,
+		"./primary.bin", "./overflow.bin", "./index.bin");
 	std::cout << std::endl;
 	std::cout << "DBMS initialized!" << std::endl;
 	std::cout << "Interactive console initialized!" << std::endl;

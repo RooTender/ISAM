@@ -1,5 +1,10 @@
 #pragma once
-class IndexArea
+#include "Area.h"
+
+class IndexArea : public Area
 {
+
+public:
+
 };
 

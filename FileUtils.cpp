@@ -47,10 +47,19 @@ size_t FileUtils::GetFileLength(std::ofstream& file)
 	return static_cast<size_t>(length);
 }
 
-void FileUtils::ChangeFileExtension(const std::string& filename, const std::string& newExtenstion)
+void FileUtils::ChangeFileExtension(const std::string& filename, const std::string& newExtenstion, const bool removeOldFileIfExists)
 {
-	const std::string fileWithoutExtension = GetFilenameWithoutExtenstion(filename);
-	if (std::rename(filename.c_str(), (fileWithoutExtension + newExtenstion).c_str()) != 0)
+	const std::string newFile = GetFilenameWithoutExtenstion(filename) + newExtenstion;
+
+	if (removeOldFileIfExists)
+	{
+		if (std::remove(newFile.c_str()) != 0)
+		{
+			// Fail means that the file didn't exist
+		}
+	}
+
+	if (std::rename(filename.c_str(), newFile.c_str()) != 0)
 	{
 		throw std::runtime_error("Failed to rename file!");
 	}

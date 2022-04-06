@@ -16,8 +16,8 @@ class Dbms final
 
 	std::string basePointerFilename;
 
-	const size_t mainRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
-	const size_t indexRecordSize = sizeof(uint32_t);
+	const size_t fullAreaRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
+	const size_t indexAreaRecordSize = sizeof(uint32_t);
 	
 	uint32_t blockingFactor;
 	uint32_t diskOperations = 0;
@@ -45,6 +45,11 @@ class Dbms final
 	std::pair<uint32_t, AreaRecord> FindAreaRecordInOverflow(uint32_t key, uint32_t pointer);
 	AreaRecord FindAreaRecord(uint32_t key);
 	bool UpdateAreaRecordInOverflow(uint32_t key, Record data, uint32_t startPointer);
+
+	void ClearDiskPage() const;
+	uint32_t BinarySearchPage(uint32_t key);
+	uint32_t GetDiskPage(uint32_t key);
+	void SetDiskPage(uint32_t pageNo);
 
 	AreaRecord SetToDeleteInOverflow(uint32_t key, uint32_t pointer);
 

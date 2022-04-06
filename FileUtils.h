@@ -13,7 +13,7 @@ class FileUtils
 public:
 	static size_t GetFileLength(std::ifstream& file);
 	static size_t GetFileLength(std::ofstream& file);
-	static void ChangeFileExtension(const std::string& filename, const std::string& newExtenstion);
+	static void ChangeFileExtension(const std::string& filename, const std::string& newExtenstion, bool removeOldFileIfExists);
 	static void CreateFile(const std::string& filename, bool recreateIfExists);
 };
 

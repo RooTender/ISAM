@@ -84,8 +84,8 @@ class Dbms final
 
 public:
 	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
-	Dbms(const Dbms&) = delete;
-	Dbms(Dbms&&) = delete;
+	Dbms(const Dbms&) = default;
+	Dbms(Dbms&&) = default;
 	Dbms& operator=(Dbms&& other) = delete;
 	Dbms& operator=(const Dbms&) = delete;
 

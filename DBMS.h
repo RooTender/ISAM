@@ -27,11 +27,12 @@ class Dbms final
 	unsigned basePointer = 0;
 
 	void InitializeBasePointer();
-	void BackupBasePointer();
+	void UpdateBasePointer();
+
 	void RecreateAreas(bool backup) const;
 	void UpdateAreasLength() const;
 
-	unsigned GetIndexRecord(std::ifstream& file, unsigned index) const;
+	unsigned ReadIndexRecord(std::ifstream& file, unsigned index) const;
 	
 	static AreaRecord ReadAreaRecord(std::ifstream& file);
 	AreaRecord ReadAreaRecord(std::ifstream& file, unsigned index) const;
@@ -39,7 +40,7 @@ class Dbms final
 	void WriteAreaRecordOnPage(std::ofstream& file, AreaRecord record, unsigned index) const;
 
 	bool IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned& pointerToNextRecord) const;
-	void GetRawPage(const std::string& filename, const unsigned& index, AreaRecord* dest);
+	void FillWithAreaRecords(const std::string& filename, const unsigned& index, AreaRecord* dest);
 	void AppendRawPage(const std::string& filename, const AreaRecord* src);
 	void UpdateRawPage(const std::string& string, const AreaRecord* auxPage, unsigned anchor);
 	void AppendPageWithAlphaCorrection(unsigned& currentOccupation);
@@ -49,9 +50,9 @@ class Dbms final
 	bool UpdateAreaRecordInOverflow(unsigned key, Record data, unsigned startPointer);
 
 	void ClearDiskPage() const;
-	unsigned BinarySearchPage(unsigned key);
-	unsigned GetDiskPage(unsigned key);
-	void SetDiskPage(unsigned pageNo);
+	unsigned DeterminePageNumber(unsigned key);
+	void LoadPrimaryToDiskPage(unsigned pageNumber);
+	void WriteDiskPageToPrimary(unsigned pageNumber);
 
 	AreaRecord SetToDeleteInOverflow(unsigned key, unsigned pointer);
 
@@ -63,9 +64,12 @@ class Dbms final
 	void GetPageToReorganize(unsigned& lastPosition, unsigned& lastPointer);
 	void Reorganize();
 
-	//void PrintHeader(const std::string& header);
-	//void PrintIndexRecords(const std::string& fromFilename);
-	//void PrintAreaRecords(const std::string& fromFilename, const std::string& header);
+	static void PrintHeader(const std::string& header, bool indexAreaAttributes);
+	void PrintIndexRecords() const;
+	static void PrintAreaRecord(const AreaRecord& areaRecord);
+	void PrintAreaRecords(const std::string& filename) const;
+	void PrintOverflowRecords() const;
+	void PrintPrimaryRecords() const;
 
 public:
 	Dbms(unsigned blockingFactor, double alpha, double maxOverflowOccupation,
@@ -82,10 +86,6 @@ public:
 	AreaRecord Remove(unsigned key);
 	void Read(unsigned key);
 
-	void PrintIndex() const;
-	void PrintPrimary() const;
-	void PrintDiskPage() const;
-	void PrintOverflow() const;
 	void PrintAll() const;
 
 	void PrintDiskOperations(bool resetCounter);

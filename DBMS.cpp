@@ -7,9 +7,20 @@ void Dbms::InitializeBasePointer()
 		FileUtils::GetFilenameWithoutExtenstion(overflowArea->GetFilename()) +
 		FileUtils::GetFilenameWithoutExtenstion(indexArea->GetFilename()) +
 		"_basePointer.bin";
+
+	auto writeToFile = std::ofstream(this->basePointerFilename, std::ofstream::binary | std::ofstream::app);
+	if (FileUtils::GetFileLength(writeToFile) == 0)
+	{
+		writeToFile.write(reinterpret_cast<char*>(&this->basePointer), sizeof(unsigned));
+	}
+	writeToFile.close();
+
+	auto readFFile = std::ifstream(this->basePointerFilename, std::ifstream::binary);
+	readFFile.read(reinterpret_cast<char*>(&this->basePointer), sizeof(unsigned));
+	readFFile.close();
 }
 
-void Dbms::BackupBasePointer()
+void Dbms::UpdateBasePointer()
 {
 	this->diskOperations++;
 	auto file = std::ofstream(this->basePointerFilename, std::ofstream::binary | std::ofstream::trunc);
@@ -39,7 +50,7 @@ void Dbms::UpdateAreasLength() const
 }
 
 
-unsigned Dbms::GetIndexRecord(std::ifstream& file, const unsigned index) const
+unsigned Dbms::ReadIndexRecord(std::ifstream& file, const unsigned index) const
 {
 	unsigned record = 0;
 
@@ -106,7 +117,7 @@ bool Dbms::IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned&
 }
 
 
-void Dbms::GetRawPage(const std::string& filename, const unsigned& index, AreaRecord* dest)
+void Dbms::FillWithAreaRecords(const std::string& filename, const unsigned& index, AreaRecord* dest)
 {
 	this->diskOperations++;
 	auto file = std::ifstream(filename, std::ifstream::binary);
@@ -211,20 +222,20 @@ void Dbms::AppendPageWithAlphaCorrection(unsigned& currentOccupation)
 
 std::pair<unsigned, AreaRecord> Dbms::FindAreaRecordInOverflow(const unsigned key, unsigned pointer)
 {
-	const auto auxPage = new AreaRecord[blockingFactor];
+	const auto page = new AreaRecord[blockingFactor];
 	unsigned selectedIndex = 0, anchor = pointer;
 
-	this->GetRawPage(overflowArea->GetFilename(), pointer - 1, auxPage);
+	this->FillWithAreaRecords(overflowArea->GetFilename(), pointer - 1, page);
 
 	while (pointer != 0)
 	{
 		const unsigned lastPointer = pointer;
-		pointer = auxPage[selectedIndex].GetPointer();
+		pointer = page[selectedIndex].GetPointer();
 
-		if (auxPage[selectedIndex].GetKey() == key)
+		if (page[selectedIndex].GetKey() == key)
 		{
-			AreaRecord areaRecord = auxPage[selectedIndex];
-			delete[] auxPage;
+			AreaRecord areaRecord = page[selectedIndex];
+			delete[] page;
 
 			return {lastPointer, areaRecord};
 		}
@@ -235,19 +246,19 @@ std::pair<unsigned, AreaRecord> Dbms::FindAreaRecordInOverflow(const unsigned ke
 		}
 		else
 		{
-			this->GetRawPage(overflowArea->GetFilename(), pointer - 1, auxPage);
+			this->FillWithAreaRecords(overflowArea->GetFilename(), pointer - 1, page);
 			anchor = pointer;
 			selectedIndex = 0;
 		}
 	}
 
-	delete[] auxPage;
+	delete[] page;
 	return {0, AreaRecord(0, Record(0, 0), 0, false)};
 }
 
 AreaRecord Dbms::FindAreaRecord(const unsigned key)
 {
-	this->GetDiskPage(key);
+	this->LoadPrimaryToDiskPage(key);
 
 	for (size_t i = 0; i < blockingFactor; ++i)
 	{
@@ -307,11 +318,14 @@ void Dbms::ClearDiskPage() const
 	}
 }
 
-unsigned Dbms::BinarySearchPage(const unsigned key)
+unsigned Dbms::DeterminePageNumber(const unsigned key)
 {
 	const unsigned indexPageSize = blockingFactor * fullAreaRecordSize / indexAreaRecordSize * indexAreaRecordSize;
 	const unsigned pages = static_cast<unsigned>(this->indexArea->GetLength()) / indexPageSize + 1;
-	unsigned left = 0, right = pages, pointer = 0;
+
+	unsigned left = 0;
+	unsigned right = pages;
+	unsigned pointer = 0;
 
 	const auto indexPage = new unsigned[indexPageSize];
 	unsigned currentIndexPageLength = 0;
@@ -349,7 +363,8 @@ unsigned Dbms::BinarySearchPage(const unsigned key)
 			do
 			{
 				file.read(reinterpret_cast<char*>(&indexPage[currentIndexPageLength]), indexAreaRecordSize);
-			} while (currentIndexPageLength < indexPageSize && indexPage[currentIndexPageLength++] != last);
+			}
+			while (currentIndexPageLength < indexPageSize && indexPage[currentIndexPageLength++] != last);
 
 			found = true;
 		}
@@ -392,14 +407,12 @@ unsigned Dbms::BinarySearchPage(const unsigned key)
 	return pointer + 1; // returns position, not index
 }
 
-unsigned Dbms::GetDiskPage(const unsigned key)
+void Dbms::LoadPrimaryToDiskPage(const unsigned pageNumber)
 {
-	const unsigned pageNo = this->BinarySearchPage(key);
-
 	this->diskOperations++;
 	auto file = std::ifstream(primaryArea->GetFilename(), std::ifstream::binary);
 
-	const unsigned pageBeginningPosition = (pageNo - 1) * static_cast<unsigned>(fullAreaRecordSize * blockingFactor);
+	const unsigned pageBeginningPosition = (pageNumber - 1) * fullAreaRecordSize * blockingFactor;
 	file.seekg(pageBeginningPosition, std::basic_ifstream<char>::beg);
 
 	for (size_t i = 0; i < blockingFactor; ++i)
@@ -407,18 +420,16 @@ unsigned Dbms::GetDiskPage(const unsigned key)
 		this->diskPage[i] = this->ReadAreaRecord(file);
 	}
 	file.close();
-
-	return pageNo;
 }
 
-void Dbms::SetDiskPage(const unsigned pageNo)
+void Dbms::WriteDiskPageToPrimary(const unsigned pageNumber)
 {
 	this->diskOperations++;
 	auto file = std::ofstream(primaryArea->GetFilename(), std::ofstream::binary | std::ofstream::in);
 
 	for (size_t i = 0; i < blockingFactor; ++i)
 	{
-		this->WriteAreaRecordOnPage(file, this->diskPage[i], (pageNo - 1) * blockingFactor + static_cast<unsigned>(i));
+		this->WriteAreaRecordOnPage(file, this->diskPage[i], (pageNumber - 1) * blockingFactor + static_cast<unsigned>(i));
 	}
 	file.close();
 }
@@ -451,7 +462,7 @@ void Dbms::InsertToOverflow(unsigned key, Record record, unsigned& startPointer)
 	// If pointer wasn't assigned, just append new record to overflow
 	if (startPointer == 0)
 	{
-		// If record wasn't already existed
+		// If the record wasn't already existed
 		if (!this->UpdateAreaRecordInOverflow(key, record, startPointer))
 		{
 			this->diskOperations++;
@@ -468,10 +479,15 @@ void Dbms::InsertToOverflow(unsigned key, Record record, unsigned& startPointer)
 	}
 
 	const auto auxPage = new AreaRecord[blockingFactor];
-	unsigned selectedIndex = 0, anchor = startPointer, lastPointer = startPointer, pointer = startPointer;
+
+	unsigned selectedIndex = 0;
+	unsigned anchor = startPointer;
+	unsigned lastPointer = startPointer;
+	unsigned pointer = startPointer;
+
 	bool alreadyInserted = false;
 
-	this->GetRawPage(overflowArea->GetFilename(), pointer - 1, auxPage);
+	this->FillWithAreaRecords(overflowArea->GetFilename(), pointer - 1, auxPage);
 
 	while (pointer != 0)
 	{
@@ -505,6 +521,7 @@ void Dbms::InsertToOverflow(unsigned key, Record record, unsigned& startPointer)
 			                    AreaRecord(key, record, static_cast<unsigned>(overflowArea->GetLength()) / this->fullAreaRecordSize + 1, false),
 			                    lastPointer - 1);
 			file.close();
+
 			file = std::ofstream(overflowArea->GetFilename(), std::ofstream::binary | std::ofstream::app);
 
 			// Append old record
@@ -529,7 +546,7 @@ void Dbms::InsertToOverflow(unsigned key, Record record, unsigned& startPointer)
 		}
 		else
 		{
-			this->GetRawPage(overflowArea->GetFilename(), pointer - 1, auxPage);
+			this->FillWithAreaRecords(overflowArea->GetFilename(), pointer - 1, auxPage);
 			anchor = pointer;
 			selectedIndex = 0;
 		}
@@ -562,12 +579,13 @@ void Dbms::InsertToOverflow(unsigned key, Record record, unsigned& startPointer)
 void Dbms::InsertToBasePointer(const unsigned key, const Record record)
 {
 	this->InsertToOverflow(key, record, this->basePointer);
-	this->BackupBasePointer();
+	this->UpdateBasePointer();
 }
 
 void Dbms::InsertToPrimary(const unsigned key, const Record record)
 {
-	const unsigned pageNo = this->GetDiskPage(key);
+	const unsigned page = this->DeterminePageNumber(key);
+	this->LoadPrimaryToDiskPage(page);
 
 	bool isInserted = false;
 	size_t i;
@@ -610,7 +628,7 @@ void Dbms::InsertToPrimary(const unsigned key, const Record record)
 		}
 	}
 
-	this->SetDiskPage(pageNo);
+	this->WriteDiskPageToPrimary(page);
 }
 
 
@@ -619,7 +637,7 @@ void Dbms::FillRecordsFromOverflow(unsigned& pointer, unsigned& index)
 	const auto auxPage = new AreaRecord[blockingFactor];
 	unsigned overflowIndex = 0, anchor = pointer;
 
-	this->GetRawPage(this->overflowArea->GetBackupFilename(), pointer - 1, auxPage);
+	this->FillWithAreaRecords(this->overflowArea->GetBackupFilename(), pointer - 1, auxPage);
 
 	while (index < blockingFactor && pointer != 0)
 	{
@@ -643,7 +661,7 @@ void Dbms::FillRecordsFromOverflow(unsigned& pointer, unsigned& index)
 				break;
 			}
 
-			this->GetRawPage(this->overflowArea->GetBackupFilename(), pointer - 1, auxPage);
+			this->FillWithAreaRecords(this->overflowArea->GetBackupFilename(), pointer - 1, auxPage);
 			anchor = pointer;
 			overflowIndex = 0;
 		}
@@ -677,7 +695,7 @@ void Dbms::GetPageToReorganize(unsigned& lastPosition, unsigned& lastPointer)
 		// Load primary page
 		if (!primaryLoaded)
 		{
-			this->GetRawPage(this->primaryArea->GetBackupFilename(), lastPosition - 1, auxPage);
+			this->FillWithAreaRecords(this->primaryArea->GetBackupFilename(), lastPosition - 1, auxPage);
 			primaryLoaded = true;
 		}
 
@@ -716,13 +734,79 @@ void Dbms::Reorganize()
 	}
 
 	this->basePointer = 0;
-	this->BackupBasePointer();
+	this->UpdateBasePointer();
 	this->UpdateAreasLength();
+}
+
+void Dbms::PrintHeader(const std::string& header, const bool indexAreaAttributes)
+{
+	std::cout << " === " << header << " === " << std::endl;
+
+	if (indexAreaAttributes)
+	{
+		std::cout << "key" << std::endl;
+	}
+	else
+	{
+		std::cout << "key\tdata\t\tpointer\tdelete" << std::endl;
+	}
+}
+
+void Dbms::PrintIndexRecords() const
+{
+	this->PrintHeader("Index", true);
+
+	auto file = std::ifstream(this->indexArea->GetFilename(), std::ifstream::binary);
+	const size_t length = FileUtils::GetFileLength(file) / indexAreaRecordSize;
+
+	for (size_t i = 0; i < length; ++i)
+	{
+		const auto key = this->ReadIndexRecord(file, static_cast<unsigned>(i));
+		std::cout << key << std::endl;
+	}
+	std::cout << std::endl;
+
+	file.close();
+}
+
+void Dbms::PrintAreaRecord(const AreaRecord& areaRecord)
+{
+	std::cout << areaRecord.GetKey() << 
+		"\t(" << areaRecord.GetRecord().GetInput().first << ", " << areaRecord.GetRecord().GetInput().second << ")\t" << 
+		"\t" << areaRecord.GetPointer() << 
+		"\t" << areaRecord.GetDeleteFlag() << std::endl;
+}
+
+void Dbms::PrintAreaRecords(const std::string& filename) const
+{
+	auto file = std::ifstream(filename, std::ifstream::binary);
+	const size_t length = FileUtils::GetFileLength(file) / fullAreaRecordSize;
+
+	for (size_t i = 0; i < length; ++i)
+	{
+		const auto areaRecord = this->ReadAreaRecord(file, static_cast<unsigned>(i));
+		this->PrintAreaRecord(areaRecord);
+	}
+	std::cout << std::endl;
+
+	file.close();
+}
+
+void Dbms::PrintOverflowRecords() const
+{
+	this->PrintHeader("Overflow", false);
+	this->PrintAreaRecords(this->overflowArea->GetFilename());
+}
+
+void Dbms::PrintPrimaryRecords() const
+{
+	this->PrintHeader("Primary", false);
+	this->PrintAreaRecords(this->primaryArea->GetFilename());
 }
 
 
 Dbms::Dbms(const unsigned blockingFactor, const double alpha, const double maxOverflowOccupation,
-	const std::string& primaryAreaFilename, const std::string& overflowAreaFilename, const std::string& indexAreaFilename) :
+           const std::string& primaryAreaFilename, const std::string& overflowAreaFilename, const std::string& indexAreaFilename) :
 	diskPage(new AreaRecord[blockingFactor]), alpha(alpha),
 	maxOverflowOccupation(maxOverflowOccupation), blockingFactor(blockingFactor)
 {
@@ -730,19 +814,11 @@ Dbms::Dbms(const unsigned blockingFactor, const double alpha, const double maxOv
 	overflowArea = new OverflowArea(overflowAreaFilename, fullAreaRecordSize);
 	indexArea = new IndexArea(indexAreaFilename, indexAreaRecordSize);
 
+	this->InitializeBasePointer();
 	this->RecreateAreas(false);
 
 	// Init base pointer first time if necessary
-	auto writeBasePointerFile = std::ofstream(this->basePointerFilename, std::ofstream::binary | std::ofstream::app);
-	if (FileUtils::GetFileLength(writeBasePointerFile) == 0)
-	{
-		writeBasePointerFile.write(reinterpret_cast<char*>(&this->basePointer), sizeof(unsigned));
-	}
-	writeBasePointerFile.close();
-
-	auto readBasePointerFile = std::ifstream(this->basePointerFilename, std::ifstream::binary);
-	readBasePointerFile.read(reinterpret_cast<char*>(&this->basePointer), sizeof(unsigned));
-	readBasePointerFile.close();
+	
 
 	this->UpdateAreasLength();
 }
@@ -781,7 +857,8 @@ void Dbms::Insert(const unsigned key, const Record record)
 
 void Dbms::UpdateRecord(const unsigned key, const Record record)
 {
-	const auto pageNo = this->GetDiskPage(key);
+	const unsigned page = this->DeterminePageNumber(key);
+	this->LoadPrimaryToDiskPage(page);
 
 	bool isInserted = false;
 	size_t i;
@@ -824,7 +901,7 @@ void Dbms::UpdateRecord(const unsigned key, const Record record)
 	else
 	{
 		// We don't need to updateRecord the pointer in primary, no need to set the page
-		this->SetDiskPage(pageNo);
+		this->WriteDiskPageToPrimary(page);
 	}
 }
 
@@ -848,7 +925,9 @@ void Dbms::UpdateKey(const unsigned oldKey, const unsigned newKey)
 
 AreaRecord Dbms::Remove(const unsigned key)
 {
-	const unsigned pageNo = this->GetDiskPage(key);
+	const unsigned page = this->DeterminePageNumber(key);
+	this->LoadPrimaryToDiskPage(page);
+
 	auto areaRecord = AreaRecord();
 
 	for (size_t i = 0; i < blockingFactor; ++i)
@@ -883,17 +962,18 @@ AreaRecord Dbms::Remove(const unsigned key)
 		}
 	}
 
-	this->SetDiskPage(pageNo);
+	this->WriteDiskPageToPrimary(page);
 	return areaRecord;
 }
 
 void Dbms::Read(const unsigned key)
 {
 	const auto areaRecord = this->FindAreaRecord(key);
+
 	if (areaRecord.GetKey() != 0)
 	{
-		std::cout << "Data: (" << areaRecord.GetRecord().GetInput().first << ", " << areaRecord.GetRecord().GetInput().second << ")"
-			<< std::endl;
+		std::cout << "Data: " << 
+			"(" << areaRecord.GetRecord().GetInput().first << ", " << areaRecord.GetRecord().GetInput().second << ")" << std::endl;
 		std::cout << "Pointer: " << areaRecord.GetPointer() << std::endl;
 		std::cout << "DeleteFlag: " << areaRecord.GetDeleteFlag() << std::endl;
 	}
@@ -903,109 +983,13 @@ void Dbms::Read(const unsigned key)
 	}
 }
 
-
-void Dbms::PrintIndex() const
-{
-	auto file = std::ifstream(indexArea->GetFilename(), std::ifstream::binary);
-
-	std::cout << " === Index === " << std::endl;
-	std::cout << "key" << std::endl;
-
-	const size_t length = FileUtils::GetFileLength(file) / sizeof(unsigned);
-
-	for (size_t i = 0; i < length; ++i)
-	{
-		unsigned key = 0;
-		file.read(reinterpret_cast<char*>(&key), sizeof(unsigned));
-
-		std::cout << key << std::endl;
-	}
-	std::cout << std::endl;
-
-	file.close();
-}
-
-void Dbms::PrintPrimary() const
-{
-	auto file = std::ifstream(primaryArea->GetFilename(), std::ifstream::binary);
-
-	std::cout << " === Primary === " << std::endl;
-	std::cout << "key\tdata\t\tpointer\tdelete" << std::endl;
-
-	const size_t length = FileUtils::GetFileLength(file) / fullAreaRecordSize;
-	for (size_t i = 0; i < length; ++i)
-	{
-		unsigned key = 0, pointer = 0;
-		double radius = 0, height = 0;
-		bool deleteFlag = false;
-
-		file.read(reinterpret_cast<char*>(&key), sizeof(unsigned)); // key
-		file.read(reinterpret_cast<char*>(&radius), sizeof(double)); // data: radius
-		file.read(reinterpret_cast<char*>(&height), sizeof(double)); // data: height
-		file.read(reinterpret_cast<char*>(&pointer), sizeof(unsigned)); // pointer
-		file.read(reinterpret_cast<char*>(&deleteFlag), sizeof(bool)); // delete flag
-
-		std::cout << key << "\t(" << radius << ", " << height << ")\t\t" << pointer << "\t" << deleteFlag << std::endl;
-	}
-	std::cout << std::endl;
-
-	file.close();
-}
-
-void Dbms::PrintDiskPage() const
-{
-	std::cout << " === DiskPage === " << std::endl;
-	std::cout << "key\tdata\t\tpointer\tdelete" << std::endl;
-
-	for (size_t i = 0; i < blockingFactor; ++i)
-	{
-		if (this->diskPage[i].GetKey() == 0)
-		{
-			std::cout << "<empty record>" << std::endl;
-		}
-		else
-		{
-			std::cout <<
-				this->diskPage[i].GetKey() << "\t(" <<
-				this->diskPage[i].GetRecord().GetInput().first << ", " <<
-				this->diskPage[i].GetRecord().GetInput().second << ")\t\t" <<
-				this->diskPage[i].GetPointer() << "\t" <<
-				this->diskPage[i].GetDeleteFlag() <<
-				std::endl;
-		}
-	}
-	std::cout << std::endl;
-}
-
-void Dbms::PrintOverflow() const
-{
-	auto file = std::ifstream(overflowArea->GetFilename(), std::ifstream::binary);
-
-	std::cout << " === Overflow === " << std::endl;
-	std::cout << "key\tdata\t\tpointer\tdelete" << std::endl;
-
-	const size_t length = FileUtils::GetFileLength(file) / fullAreaRecordSize;
-	for (size_t i = 0; i < length; ++i)
-	{
-		AreaRecord areaRecord = this->ReadAreaRecord(file);
-
-		std::cout << areaRecord.GetKey() << 
-			"\t(" << areaRecord.GetRecord().GetInput().first << ", " << areaRecord.GetRecord().GetInput().second << ")\t" <<
-			"\t" << areaRecord.GetPointer() << 
-			"\t" << areaRecord.GetDeleteFlag() << std::endl;
-	}
-	std::cout << std::endl;
-
-	file.close();
-}
-
 void Dbms::PrintAll() const
 {
 	std::cout << std::endl;
 
-	this->PrintIndex();
-	this->PrintPrimary();
-	this->PrintOverflow();
+	this->PrintIndexRecords();
+	this->PrintPrimaryRecords();
+	this->PrintOverflowRecords();
 }
 
 void Dbms::PrintDiskOperations(const bool resetCounter)

@@ -8,6 +8,6 @@ public:
 	using Area::Area;
 	IndexArea() = delete;
 
-	unsigned GetRecord(std::ifstream& file, const unsigned index) const;
+	unsigned GetRecord(std::ifstream& file, unsigned index) const;
 };
 

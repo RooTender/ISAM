@@ -25,17 +25,18 @@ class Dbms final
 	unsigned blockingFactor;
 	unsigned diskOperations = 0;
 	unsigned basePointer = 0;
-	
+
+	void InitializeBasePointer();
 	void BackupBasePointer();
 	void RecreateAreas(bool backup) const;
 	void UpdateAreasLength() const;
 
 	unsigned GetIndexRecord(std::ifstream& file, unsigned index) const;
 	
-	static AreaRecord GetAreaRecord(std::ifstream& file);
-	AreaRecord GetAreaRecord(std::ifstream& file, unsigned index) const;
-	static void AppendAreaRecord(std::ofstream& file, const AreaRecord& record);
-	void SetAreaRecord(std::ofstream& file, AreaRecord record, unsigned index) const;
+	static AreaRecord ReadAreaRecord(std::ifstream& file);
+	AreaRecord ReadAreaRecord(std::ifstream& file, unsigned index) const;
+	static void WriteAreaRecord(std::ofstream& file, const AreaRecord& record);
+	void WriteAreaRecordOnPage(std::ofstream& file, AreaRecord record, unsigned index) const;
 
 	bool IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned& pointerToNextRecord) const;
 	void GetRawPage(const std::string& filename, const unsigned& index, AreaRecord* dest);
@@ -61,6 +62,10 @@ class Dbms final
 	void FillRecordsFromOverflow(unsigned& pointer, unsigned& index);
 	void GetPageToReorganize(unsigned& lastPosition, unsigned& lastPointer);
 	void Reorganize();
+
+	//void PrintHeader(const std::string& header);
+	//void PrintIndexRecords(const std::string& fromFilename);
+	//void PrintAreaRecords(const std::string& fromFilename, const std::string& header);
 
 public:
 	Dbms(unsigned blockingFactor, double alpha, double maxOverflowOccupation,

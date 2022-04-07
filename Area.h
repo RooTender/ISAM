@@ -15,6 +15,7 @@ public:
 
 	void SetFilename(std::string name);
 	std::string GetFilename() const;
+	std::string GetBackupFilename() const;
 
 	void UpdateLength();
 	size_t GetLength() const;

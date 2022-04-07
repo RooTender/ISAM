@@ -10,6 +10,7 @@ class FileUtils
 
 public:
 	static std::string GetFilenameWithoutExtenstion(const std::string& filename);
+	static std::string GetFilenameWithoutPathAndExtenstion(const std::string& filename);
 
 	static size_t GetFileLength(std::ifstream& file);
 	static size_t GetFileLength(std::ofstream& file);

@@ -25,6 +25,12 @@ std::string FileUtils::GetFilenameWithoutExtenstion(const std::string& filename)
 	return filename.substr(0, filename.find_last_of('.'));
 }
 
+std::string FileUtils::GetFilenameWithoutPathAndExtenstion(const std::string& filename)
+{
+	const auto cleanFilename = GetFilenameWithoutExtenstion(filename);
+	return cleanFilename.substr(cleanFilename.find_last_of('/') + 1, cleanFilename.length());
+}
+
 size_t FileUtils::GetFileLength(std::ifstream& file)
 {
 	const std::streampos previousPosition = file.tellg();

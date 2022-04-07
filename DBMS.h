@@ -3,6 +3,7 @@
 #include "FileUtils.h"
 #include "Areas.h"
 #include "AreaRecord.h"
+#include "DiskPage.h"
 #include <iostream>
 
 
@@ -12,7 +13,7 @@ class Dbms final
 	OverflowArea* overflowArea = nullptr;
 	IndexArea* indexArea = nullptr;
 
-	AreaRecord* diskPage = nullptr;
+	DiskPage* diskPage = nullptr;
 
 	std::string basePointerFilename;
 
@@ -32,8 +33,9 @@ class Dbms final
 	void RecreateAreas(bool backup) const;
 	void UpdateAreasLength() const;
 
-	unsigned ReadIndexRecord(std::ifstream& file, unsigned index) const;
-	
+	unsigned ReadIndexRecord(unsigned index) const;
+	void WriteIndexRecord(unsigned key) const;
+
 	static AreaRecord ReadAreaRecord(std::ifstream& file);
 	AreaRecord ReadAreaRecord(std::ifstream& file, unsigned index) const;
 	static void WriteAreaRecord(std::ofstream& file, const AreaRecord& record);
@@ -49,7 +51,6 @@ class Dbms final
 	AreaRecord FindAreaRecord(unsigned key);
 	bool UpdateAreaRecordInOverflow(unsigned key, Record data, unsigned startPointer);
 
-	void ClearDiskPage() const;
 	unsigned DeterminePageNumber(unsigned key);
 	void LoadPrimaryToDiskPage(unsigned pageNumber);
 	void WriteDiskPageToPrimary(unsigned pageNumber);

@@ -22,7 +22,7 @@ int main()
 {
 	srand(static_cast<unsigned>(time(nullptr))); // NOLINT(cert-msc51-cpp)
 
-	uint32_t blockingFactor;
+	unsigned blockingFactor;
 	double alpha, maxOverflowOccupation;
 
 	std::cout << "Hubert Lewandowski 180348" << std::endl;
@@ -50,7 +50,7 @@ int main()
 		std::cin >> option;
 		option = static_cast<char>(std::toupper(option));
 
-		uint32_t key;
+		unsigned key;
 
 		if (option == 'I')
 		{
@@ -66,7 +66,7 @@ int main()
 
 		else if (option == 'K')
 		{
-			uint32_t newKey;
+			unsigned newKey;
 
 			std::cin >> key;
 			std::cin >> newKey;
@@ -81,7 +81,7 @@ int main()
 			std::cout << "Keys: ";
 			for (size_t i = 0; i < amount; ++i)
 			{
-				const auto newKey = rand() % amount + 1;
+				const unsigned newKey = rand() % amount + 1;
 				std::cout << newKey << ", ";
 				dbms.Insert(newKey, Record(rand() % 10, rand() % 10));
 			}

@@ -1,12 +1,17 @@
 #include "AreaRecord.h"
 
-AreaRecord::AreaRecord() : key(0), data(Record(0, 0)), pointer(0), deleteFlag(false)
+AreaRecord::AreaRecord() : id(0), data(Record(0, 0)), next(0), deleteFlag(false)
 {
 }
 
-void AreaRecord::SetKey(const uint32_t& key)
+AreaRecord::AreaRecord(const unsigned key, Record data, const unsigned pointer, const bool deleteFlag):
+	id(key), data(std::move(data)), next(pointer), deleteFlag(deleteFlag)
 {
-	this->key = key;
+}
+
+void AreaRecord::SetKey(const unsigned& key)
+{
+	this->id = key;
 }
 
 void AreaRecord::SetRecord(const Record& record)
@@ -14,9 +19,9 @@ void AreaRecord::SetRecord(const Record& record)
 	this->data = record;
 }
 
-void AreaRecord::SetPointer(const uint32_t& pointer)
+void AreaRecord::SetPointer(const unsigned& pointer)
 {
-	this->pointer = pointer;
+	this->next = pointer;
 }
 
 void AreaRecord::SetDeleteFlag(const bool toDelete)
@@ -24,9 +29,9 @@ void AreaRecord::SetDeleteFlag(const bool toDelete)
 	this->deleteFlag = toDelete;
 }
 
-uint32_t AreaRecord::GetKey() const
+unsigned AreaRecord::GetKey() const
 {
-	return this->key;
+	return this->id;
 }
 
 Record AreaRecord::GetRecord() const
@@ -34,9 +39,9 @@ Record AreaRecord::GetRecord() const
 	return this->data;
 }
 
-uint32_t AreaRecord::GetPointer() const
+unsigned AreaRecord::GetPointer() const
 {
-	return this->pointer;
+	return this->next;
 }
 
 bool AreaRecord::GetDeleteFlag() const

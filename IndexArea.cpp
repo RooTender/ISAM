@@ -1,11 +1,11 @@
 #include "IndexArea.h"
 
-uint32_t IndexArea::GetRecord(std::ifstream& file, const uint32_t index) const
+unsigned IndexArea::GetRecord(std::ifstream& file, const unsigned index) const
 {
-	uint32_t record;
+	unsigned record = 0;
 
 	file.seekg(index, std::ifstream::beg);
-	file.read(reinterpret_cast<char*>(&record), this->GetRecordSize());
+	file.read(reinterpret_cast<char*>(&record), static_cast<std::streamsize>(this->GetRecordSize()));
 
 	return record;
 }

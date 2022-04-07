@@ -3,27 +3,23 @@
 
 class AreaRecord
 {
-	uint32_t key;
+	unsigned id;
 	Record data;
-	uint32_t pointer;
+	unsigned next;
 	bool deleteFlag;
 
 public:
 	AreaRecord();
+	explicit AreaRecord(unsigned key, Record data, unsigned pointer, bool deleteFlag);
 
-	explicit AreaRecord(const uint32_t key, Record data, const uint32_t pointer, const bool deleteFlag) :
-		key(key), data(std::move(data)), pointer(pointer), deleteFlag(deleteFlag)
-	{
-	}
-
-	void SetKey(const uint32_t& key);
+	void SetKey(const unsigned& key);
 	void SetRecord(const Record& record);
-	void SetPointer(const uint32_t& pointer);
+	void SetPointer(const unsigned& pointer);
 	void SetDeleteFlag(bool toDelete);
 
-	uint32_t GetKey() const;
+	unsigned GetKey() const;
 	Record GetRecord() const;
-	uint32_t GetPointer() const;
+	unsigned GetPointer() const;
 	bool GetDeleteFlag() const;
 };
 

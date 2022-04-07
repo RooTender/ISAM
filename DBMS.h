@@ -16,53 +16,54 @@ class Dbms final
 
 	std::string basePointerFilename;
 
-	const size_t fullAreaRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
-	const size_t indexAreaRecordSize = sizeof(uint32_t);
-	
-	uint32_t blockingFactor;
-	uint32_t diskOperations = 0;
-	uint32_t basePointer = 0;
+	double alpha;
+	double maxOverflowOccupation;
 
-	double alpha, maxOverflowOccupation;
+	const unsigned fullAreaRecordSize = sizeof(unsigned) * 2 + sizeof(double) * 2 + sizeof(bool);
+	const unsigned indexAreaRecordSize = sizeof(unsigned);
+	
+	unsigned blockingFactor;
+	unsigned diskOperations = 0;
+	unsigned basePointer = 0;
 	
 	void BackupBasePointer();
 	void RecreateAreas(bool backup) const;
 	void UpdateAreasLength() const;
 
-	uint32_t GetIndexRecord(std::ifstream& file, uint32_t index) const;
+	unsigned GetIndexRecord(std::ifstream& file, unsigned index) const;
 	
 	static AreaRecord GetAreaRecord(std::ifstream& file);
-	AreaRecord GetAreaRecord(std::ifstream& file, uint32_t index) const;
+	AreaRecord GetAreaRecord(std::ifstream& file, unsigned index) const;
 	static void AppendAreaRecord(std::ofstream& file, const AreaRecord& record);
-	void SetAreaRecord(std::ofstream& file, AreaRecord record, uint32_t index) const;
+	void SetAreaRecord(std::ofstream& file, AreaRecord record, unsigned index) const;
 
-	bool IsNextRecordOnCurrentPage(const uint32_t& pageAnchor, const uint32_t& pointerToNextRecord) const;
-	void GetRawPage(const std::string& filename, const uint32_t& index, AreaRecord* dest);
+	bool IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned& pointerToNextRecord) const;
+	void GetRawPage(const std::string& filename, const unsigned& index, AreaRecord* dest);
 	void AppendRawPage(const std::string& filename, const AreaRecord* src);
-	void UpdateRawPage(const std::string& string, const AreaRecord* auxPage, uint32_t anchor);
-	void AppendPageWithAlphaCorrection(uint32_t& currentOccupation);
+	void UpdateRawPage(const std::string& string, const AreaRecord* auxPage, unsigned anchor);
+	void AppendPageWithAlphaCorrection(unsigned& currentOccupation);
 
-	std::pair<uint32_t, AreaRecord> FindAreaRecordInOverflow(uint32_t key, uint32_t pointer);
-	AreaRecord FindAreaRecord(uint32_t key);
-	bool UpdateAreaRecordInOverflow(uint32_t key, Record data, uint32_t startPointer);
+	std::pair<unsigned, AreaRecord> FindAreaRecordInOverflow(unsigned key, unsigned pointer);
+	AreaRecord FindAreaRecord(unsigned key);
+	bool UpdateAreaRecordInOverflow(unsigned key, Record data, unsigned startPointer);
 
 	void ClearDiskPage() const;
-	uint32_t BinarySearchPage(uint32_t key);
-	uint32_t GetDiskPage(uint32_t key);
-	void SetDiskPage(uint32_t pageNo);
+	unsigned BinarySearchPage(unsigned key);
+	unsigned GetDiskPage(unsigned key);
+	void SetDiskPage(unsigned pageNo);
 
-	AreaRecord SetToDeleteInOverflow(uint32_t key, uint32_t pointer);
+	AreaRecord SetToDeleteInOverflow(unsigned key, unsigned pointer);
 
-	void InsertToOverflow(uint32_t key, Record record, uint32_t& startPointer);
-	void InsertToBasePointer(uint32_t key, Record record);
-	void InsertToPrimary(uint32_t key, Record record);
+	void InsertToOverflow(unsigned key, Record record, unsigned& startPointer);
+	void InsertToBasePointer(unsigned key, Record record);
+	void InsertToPrimary(unsigned key, Record record);
 
-	void FillRecordsFromOverflow(size_t& pointer, size_t& index);
-	void GetPageToReorganize(uint32_t& lastPosition, uint32_t& lastPointer);
+	void FillRecordsFromOverflow(unsigned& pointer, unsigned& index);
+	void GetPageToReorganize(unsigned& lastPosition, unsigned& lastPointer);
 	void Reorganize();
 
 public:
-	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation,
+	Dbms(unsigned blockingFactor, double alpha, double maxOverflowOccupation,
 		const std::string& primaryAreaFilename, const std::string& overflowAreaFilename, const std::string& indexAreaFilename);
 	Dbms(const Dbms&) = default;
 	Dbms(Dbms&&) = default;
@@ -70,11 +71,11 @@ public:
 	Dbms& operator=(const Dbms&) = delete;
 
 	void UpdateFileStructure(bool forceUpdate = false);
-	void Insert(uint32_t key, Record record);
-	void UpdateRecord(uint32_t key, Record record);
-	void UpdateKey(uint32_t oldKey, uint32_t newKey);
-	AreaRecord Remove(uint32_t key);
-	void Read(uint32_t key);
+	void Insert(unsigned key, Record record);
+	void UpdateRecord(unsigned key, Record record);
+	void UpdateKey(unsigned oldKey, unsigned newKey);
+	AreaRecord Remove(unsigned key);
+	void Read(unsigned key);
 
 	void PrintIndex() const;
 	void PrintPrimary() const;

@@ -20,5 +20,6 @@ public:
 	size_t GetLength() const;
 
 	size_t GetRecordSize() const;
+
 };
 

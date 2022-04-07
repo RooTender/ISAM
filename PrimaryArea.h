@@ -5,5 +5,6 @@ class PrimaryArea : public Area
 {
 public:
 	using Area::Area;
+	PrimaryArea() = delete;
 };
 

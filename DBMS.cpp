@@ -116,7 +116,7 @@ void Dbms::WriteAreaRecord(std::ofstream& file, const AreaRecord& record)
 
 void Dbms::WriteAreaRecordOnPage(std::ofstream& file, const AreaRecord record, const unsigned index) const
 {
-	const auto selectedPage = index * static_cast<unsigned>(fullAreaRecordSize);
+	const auto selectedPage = index * fullAreaRecordSize;
 	file.seekp(selectedPage, std::ofstream::beg);
 
 	this->WriteAreaRecord(file, record);
@@ -358,7 +358,7 @@ unsigned Dbms::DeterminePageNumber(const unsigned key)
 
 		if (first <= key && last >= key || !fullPageWasRead || pointer == 0 && first > key)
 		{
-			const auto page = pointer * static_cast<unsigned>(indexPageSize);
+			const auto page = pointer * indexPageSize;
 			file.seekg(page, std::basic_ifstream<char>::beg);
 			do
 			{

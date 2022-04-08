@@ -15,8 +15,8 @@ However, the goal was simulate a properly implemented ISAM structure instead of 
 - Reorganizing on command
 - Automatic backups
 - Printing
-  - amount of disk operations
-  - data of the areas
+  - Amount of disk operations
+  - Data of the areas (_Index, Primary and Overflow_)
 
 ## About technology
 The code is purely written in C++ and is compatible with version 11 and higher.

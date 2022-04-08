@@ -1,14 +1,15 @@
 #pragma once
 // ReSharper disable once CppUnusedIncludeDirective
 #include "FileUtils.h"
-#include "Areas.h"
-#include "AreaRecord.h"
+#include "DbmsUtils.h"
 #include "DiskPage.h"
 #include <iostream>
 
 
 class Dbms final
 {
+	DbmsUtils* dbmsUtils = nullptr;
+
 	PrimaryArea* primaryArea = nullptr;
 	OverflowArea* overflowArea = nullptr;
 	IndexArea* indexArea = nullptr;
@@ -20,8 +21,8 @@ class Dbms final
 	double alpha;
 	double maxOverflowOccupation;
 
-	const unsigned fullAreaRecordSize = sizeof(unsigned) * 2 + sizeof(double) * 2 + sizeof(bool);
-	const unsigned indexAreaRecordSize = sizeof(unsigned);
+	const unsigned areaRecordSize = sizeof(unsigned) * 2 + sizeof(double) * 2 + sizeof(bool);
+	const unsigned indexRecordSize = sizeof(unsigned);
 	
 	unsigned blockingFactor;
 	unsigned diskOperations = 0;
@@ -33,12 +34,6 @@ class Dbms final
 	void RecreateAreas(bool backup) const;
 	void UpdateAreasLength() const;
 
-	unsigned ReadIndexRecord(std::ifstream& file, unsigned index) const;
-	static void WriteIndexRecord(std::ofstream& file, unsigned key);
-
-	static AreaRecord ReadAreaRecord(std::ifstream& file);
-	AreaRecord ReadAreaRecord(std::ifstream& file, unsigned index) const;
-	static void WriteAreaRecord(std::ofstream& file, const AreaRecord& record);
 	void OverrideAreaRecordOnPage(std::ofstream& file, AreaRecord record, unsigned index) const;
 
 	bool IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned& pointerToNextRecord) const;
@@ -64,13 +59,6 @@ class Dbms final
 	void FillRecordsFromOverflow(unsigned& pointer, unsigned& index);
 	void GetPageToReorganize(unsigned& lastPosition, unsigned& lastPointer);
 	void Reorganize();
-
-	static void PrintHeader(const std::string& header, bool indexAreaAttributes);
-	void PrintIndexRecords() const;
-	static void PrintAreaRecord(const AreaRecord& areaRecord);
-	void PrintAreaRecords(const std::string& filename) const;
-	void PrintOverflowRecords() const;
-	void PrintPrimaryRecords() const;
 
 public:
 	Dbms(unsigned blockingFactor, double alpha, double maxOverflowOccupation,

@@ -19,8 +19,6 @@ public:
 
 	void UpdateLength();
 	size_t GetLength() const;
-
 	size_t GetRecordSize() const;
-
 };
 

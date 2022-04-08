@@ -33,13 +33,13 @@ class Dbms final
 	void RecreateAreas(bool backup) const;
 	void UpdateAreasLength() const;
 
-	unsigned ReadIndexRecord(unsigned index) const;
-	void WriteIndexRecord(unsigned key) const;
+	unsigned ReadIndexRecord(std::ifstream& file, unsigned index) const;
+	static void WriteIndexRecord(std::ofstream& file, unsigned key);
 
 	static AreaRecord ReadAreaRecord(std::ifstream& file);
 	AreaRecord ReadAreaRecord(std::ifstream& file, unsigned index) const;
 	static void WriteAreaRecord(std::ofstream& file, const AreaRecord& record);
-	void WriteAreaRecordOnPage(std::ofstream& file, AreaRecord record, unsigned index) const;
+	void OverrideAreaRecordOnPage(std::ofstream& file, AreaRecord record, unsigned index) const;
 
 	bool IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned& pointerToNextRecord) const;
 	void FillWithAreaRecords(const std::string& filename, const unsigned& index, AreaRecord* dest);

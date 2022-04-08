@@ -7,7 +7,5 @@ class IndexArea : public Area
 public:
 	using Area::Area;
 	IndexArea() = delete;
-
-	unsigned GetRecord(std::ifstream& file, unsigned index) const;
 };
 

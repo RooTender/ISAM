@@ -204,7 +204,8 @@ std::pair<unsigned, AreaRecord> Dbms::FindAreaRecordInOverflow(const unsigned ke
 
 AreaRecord Dbms::FindAreaRecord(const unsigned key)
 {
-	this->LoadPrimaryToDiskPage(key);
+	const unsigned page = this->DeterminePageNumber(key);
+	this->LoadPrimaryToDiskPage(page);
 
 	for (size_t i = 0; i < blockingFactor; ++i)
 	{
@@ -884,6 +885,7 @@ void Dbms::PrintAll() const
 
 void Dbms::PrintDiskOperations(const bool resetCounter)
 {
+	std::cout << std::endl;
 	std::cout << "Disk operations: " << this->diskOperations << std::endl;
 	if (resetCounter)
 	{

@@ -4,7 +4,7 @@ This project is a simulation of a simple DBMS (_Database Management System_) tha
 ## Usage
 The DBMS works on records that contain information about trapeziod volumes. They must hold the data on the `radius` and `height`. 
 <hr>
-However, the goal was simulate a properly implemented ISAM structure instead of focusing on records. Therefore records have data randomly generated, but the user has to **specify record ID**. Thanks to this, the system manages the records in a way that has minimal performance costs.
+However, the goal was to simulate a properly implemented ISAM structure instead of focusing on records. Therefore records have data randomly generated, but the user has to **specify record ID**. Thanks to this, the system manages the records in a way that has minimal performance costs.
 
 ## Features
 - Record operations

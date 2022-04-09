@@ -3,7 +3,6 @@
 
 class DiskPage
 {
-private:
 	AreaRecord* page = nullptr;
 	size_t size = 0;
 

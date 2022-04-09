@@ -1,4 +1,3 @@
-// ReSharper disable CppClangTidyConcurrencyMtUnsafe
 #include "Dbms.h"
 #include "Record.h"
 #include <random>
@@ -20,12 +19,14 @@ void PrintLegend()
 
 int main()
 {
-	srand(static_cast<unsigned>(time(nullptr))); // NOLINT(cert-msc51-cpp)
+	const std::uniform_int_distribution<unsigned> distribution(0, 9);
+	std::random_device device;
+	std::mt19937 engine(device());
+	auto getRandomNumber = [&] {return distribution(engine); };
 
 	unsigned blockingFactor;
 	double alpha, maxOverflowOccupation;
 
-	std::cout << "Hubert Lewandowski 180348" << std::endl;
 	std::cout << "Blocking factor: ";
 	std::cin >> blockingFactor;
 	std::cout << "Alpha: ";
@@ -55,13 +56,13 @@ int main()
 		if (option == 'I')
 		{
 			std::cin >> key;
-			dbms.Insert(key, Record(rand() % 10, rand() % 10));
+			dbms.Insert(key, Record(getRandomNumber(), getRandomNumber()));
 		}
 
 		else if (option == 'U')
 		{
 			std::cin >> key;
-			dbms.UpdateRecord(key, Record(rand() % 10, rand() % 10));
+			dbms.UpdateRecord(key, Record(getRandomNumber(), getRandomNumber()));
 		}
 
 		else if (option == 'K')
@@ -81,9 +82,9 @@ int main()
 			std::cout << "Keys: ";
 			for (size_t i = 0; i < amount; ++i)
 			{
-				const unsigned newKey = rand() % amount + 1;
+				const unsigned newKey = getRandomNumber();
 				std::cout << newKey << ", ";
-				dbms.Insert(newKey, Record(rand() % 10, rand() % 10));
+				dbms.Insert(newKey, Record(getRandomNumber(), getRandomNumber()));
 			}
 			std::cout << std::endl;
 		}

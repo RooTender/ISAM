@@ -148,7 +148,7 @@ void Dbms::AppendPageWithAlphaCorrection(unsigned& currentOccupation)
 		}
 	}
 
-	currentOccupation = (currentOccupation < limit) ? currentOccupation : 0;
+	currentOccupation = currentOccupation < limit ? currentOccupation : 0;
 	if (!pageIsEmpty)
 	{
 		if (auxPage[0].GetKey() > 0)
@@ -204,7 +204,8 @@ std::pair<unsigned, AreaRecord> Dbms::FindAreaRecordInOverflow(const unsigned ke
 
 AreaRecord Dbms::FindAreaRecord(const unsigned key)
 {
-	this->LoadPrimaryToDiskPage(key);
+	const unsigned page = this->DeterminePageNumber(key);
+	this->LoadPrimaryToDiskPage(page);
 
 	for (size_t i = 0; i < blockingFactor; ++i)
 	{
@@ -286,7 +287,7 @@ unsigned Dbms::DeterminePageNumber(const unsigned key)
 		bool fullPageWasRead = true;
 		if ((static_cast<unsigned long long>(pointer) + 1) * indexPageSize - indexRecordSize > this->indexArea->GetLength())
 		{
-			last = dbmsUtils->ReadIndexRecord(file, this->indexArea->GetLength() - indexRecordSize);
+			last = dbmsUtils->ReadIndexRecord(file, static_cast<unsigned>(this->indexArea->GetLength()) - indexRecordSize);
 			fullPageWasRead = false;
 		}
 		else
@@ -355,7 +356,7 @@ void Dbms::LoadPrimaryToDiskPage(const unsigned pageNumber)
 
 	for (size_t i = 0; i < blockingFactor; ++i)
 	{
-		this->diskPage->Set(i, dbmsUtils->ReadAreaRecord(file, pageBeginningPosition + i));
+		this->diskPage->Set(i, dbmsUtils->ReadAreaRecord(file, pageBeginningPosition + static_cast<unsigned>(i)));
 	}
 	file.close();
 }
@@ -776,8 +777,7 @@ void Dbms::UpdateRecord(const unsigned key, const Record record)
 
 	if (!isInserted)
 	{
-		const auto recordInOverflow = this->FindAreaRecordInOverflow(
-			key, (i == 0) ? this->basePointer : this->diskPage->Get(i - 1).GetPointer());
+		const auto recordInOverflow = this->FindAreaRecordInOverflow(key, i == 0 ? this->basePointer : this->diskPage->Get(i - 1).GetPointer());
 		if (recordInOverflow.first != 0)
 		{
 			this->UpdateAreaRecordInOverflow(key, record, recordInOverflow.first);
@@ -885,6 +885,7 @@ void Dbms::PrintAll() const
 
 void Dbms::PrintDiskOperations(const bool resetCounter)
 {
+	std::cout << std::endl;
 	std::cout << "Disk operations: " << this->diskOperations << std::endl;
 	if (resetCounter)
 	{

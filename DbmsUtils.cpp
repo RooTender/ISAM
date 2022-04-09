@@ -23,7 +23,7 @@ void DbmsUtils::PrintIndexRecords() const
 
 	for (size_t i = 0; i < length; ++i)
 	{
-		const auto key = this->ReadIndexRecord(file, i);
+		const auto key = this->ReadIndexRecord(file, static_cast<unsigned>(i));
 		std::cout << key << std::endl;
 	}
 	std::cout << std::endl;
@@ -80,10 +80,10 @@ DbmsUtils::DbmsUtils(IndexArea* indexArea, PrimaryArea* primaryArea, OverflowAre
 unsigned DbmsUtils::ReadIndexRecord(std::ifstream& file, const unsigned index) const
 {
 	unsigned record = 0;
-	const auto selectedPage = index * indexRecordSize;
+	const unsigned selectedPage = index * static_cast<unsigned>(indexRecordSize);
 
 	file.seekg(selectedPage, std::ifstream::beg);
-	file.read(reinterpret_cast<char*>(&record), indexRecordSize);
+	file.read(reinterpret_cast<char*>(&record), static_cast<unsigned>(indexRecordSize));
 
 	return record;
 }
@@ -98,7 +98,7 @@ AreaRecord DbmsUtils::ReadAreaRecord(std::ifstream& file, const unsigned index) 
 	const std::streampos currentPosition = file.tellg();
 	const auto selectedPage = index * areaRecordSize;
 
-	file.seekg(selectedPage, std::ifstream::beg);
+	file.seekg(static_cast<unsigned>(selectedPage), std::ifstream::beg);
 	AreaRecord areaRecord = this->ReadAreaRecord(file);
 
 	file.seekg(currentPosition);

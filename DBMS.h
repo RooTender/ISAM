@@ -1,108 +1,83 @@
 #pragma once
-#include "Record.h"
-#include <string>
+// ReSharper disable once CppUnusedIncludeDirective
+#include "FileUtils.h"
+#include "DbmsUtils.h"
+#include "DiskPage.h"
 #include <iostream>
 
-struct AreaRecord
+
+class Dbms final
 {
-	AreaRecord()
-	{
-	}
+	DbmsUtils* dbmsUtils = nullptr;
 
-	AreaRecord(const uint32_t key, Record data, const uint32_t pointer, const bool deleteFlag) :
-		key(key), data(std::move(data)), pointer(pointer), deleteFlag(deleteFlag)
-	{
-	}
+	PrimaryArea* primaryArea = nullptr;
+	OverflowArea* overflowArea = nullptr;
+	IndexArea* indexArea = nullptr;
 
-	uint32_t key = 0;
-	Record data = Record(0, 0);
-	uint32_t pointer = 0;
-	bool deleteFlag = false;
-};
+	DiskPage* diskPage = nullptr;
 
-using page = uint32_t;
+	std::string basePointerFilename;
 
-class Dbms
-{
-	struct Area
-	{
-		const std::string overflow = "./overflow.bin";
-		const std::string index = "./index.bin";
-		const std::string primary = "./primary.bin";
+	double alpha;
+	double maxOverflowOccupation;
 
-		struct Length
-		{
-			size_t overflow = 0;
-			size_t index = 0;
-			size_t primary = 0;
-		} length;
-	} area;
+	const unsigned areaRecordSize = sizeof(unsigned) * 2 + sizeof(double) * 2 + sizeof(bool);
+	const unsigned indexRecordSize = sizeof(unsigned);
+	
+	unsigned blockingFactor;
+	unsigned diskOperations = 0;
+	unsigned basePointer = 0;
 
-	const size_t mainRecordSize = sizeof(uint32_t) * 2 + sizeof(double) * 2 + sizeof(bool);
-	const size_t indexRecordSize = sizeof(uint32_t);
-	AreaRecord* diskPage;
+	void InitializeBasePointer();
+	void UpdateBasePointer();
 
-	uint32_t blockingFactor;
-	uint32_t diskOperations = 0;
-	uint32_t basePointer = 0;
+	void RecreateAreas(bool backup) const;
+	void UpdateAreasLength() const;
 
-	double alpha, maxOverflowOccupation;
+	void OverrideAreaRecordOnPage(std::ofstream& file, AreaRecord record, unsigned index) const;
 
-	static size_t getFileLength(std::ifstream& file);
-	static size_t getFileLength(std::ofstream& file);
-	void updateLengthData();
-	void backupBasePointer();
-	void recreateAreas(bool backup) const;
+	bool IsNextRecordOnCurrentPage(const unsigned& pageAnchor, const unsigned& pointerToNextRecord) const;
+	void FillWithAreaRecords(const std::string& filename, const unsigned& index, AreaRecord* dest);
+	void AppendRawPage(const std::string& filename, const AreaRecord* src);
+	void UpdateRawPage(const std::string& string, const AreaRecord* auxPage, unsigned anchor);
+	void AppendPageWithAlphaCorrection(unsigned& currentOccupation);
 
-	uint32_t getIndexRecord(std::ifstream& file, uint32_t index) const;
-	uint32_t binarySearchPage(uint32_t key);
+	std::pair<unsigned, AreaRecord> FindAreaRecordInOverflow(unsigned key, unsigned pointer);
+	AreaRecord FindAreaRecord(unsigned key);
+	bool UpdateAreaRecordInOverflow(unsigned key, Record data, unsigned startPointer);
 
-	static AreaRecord getAreaRecord(std::ifstream& file);
-	AreaRecord getAreaRecord(std::ifstream& file, uint32_t index) const;
-	static void appendAreaRecord(std::ofstream& file, AreaRecord record);
-	void setAreaRecord(std::ofstream& file, AreaRecord record, uint32_t index) const;
+	unsigned DeterminePageNumber(unsigned key);
+	void LoadPrimaryToDiskPage(unsigned pageNumber);
+	void WriteDiskPageToPrimary(unsigned pageNumber);
 
-	bool isNextRecordOnCurrentPage(const uint32_t& pageAnchor, const uint32_t& pointerToNextRecord) const;
-	void getRawPage(const std::string& filename, const uint32_t& index, AreaRecord* dest);
-	void appendRawPage(const std::string& filename, const AreaRecord* src);
-	void updateRawPage(const std::string& string, const AreaRecord* auxPage, uint32_t anchor);
-	void appendPageWithAlphaCorrection(uint32_t& currOccupation);
+	AreaRecord SetToDeleteInOverflow(unsigned key, unsigned pointer);
 
-	std::pair<uint32_t, AreaRecord> findAreaRecordInOverflow(uint32_t key, uint32_t pointer);
-	AreaRecord findAreaRecord(uint32_t key);
-	bool updateAreaRecordInOverflow(uint32_t key, Record data, uint32_t startPointer);
+	void InsertToOverflow(unsigned key, Record record, unsigned& startPointer);
+	void InsertToBasePointer(unsigned key, Record record);
+	void InsertToPrimary(unsigned key, Record record);
 
-	void clearDiskPage() const;
-	uint32_t getDiskPage(uint32_t key);
-	void setDiskPage(uint32_t pageNo);
-
-	AreaRecord setToDeleteInOverflow(uint32_t key, uint32_t pointer);
-
-	void insertToOverflow(uint32_t key, Record record, uint32_t& startPointer);
-	void insertToBasePointer(uint32_t key, Record record);
-	void insertToPrimary(uint32_t key, Record record);
-
-	void fillRecordsFromOverflow(size_t& pointer, size_t& index);
-	void getPageToReorganize(uint32_t& lastPosition, uint32_t& lastPointer);
-	void reorganize();
+	void FillRecordsFromOverflow(unsigned& pointer, unsigned& index);
+	void GetPageToReorganize(unsigned& lastPosition, unsigned& lastPointer);
+	void Reorganize();
 
 public:
-	Dbms(uint32_t blockingFactor, double alpha, double maxOverflowOccupation);
+	Dbms(unsigned blockingFactor, double alpha, double maxOverflowOccupation,
+		const std::string& primaryAreaFilename, const std::string& overflowAreaFilename, const std::string& indexAreaFilename);
+	Dbms(const Dbms&) = default;
+	Dbms(Dbms&&) = default;
+	Dbms& operator=(Dbms&& other) = delete;
+	Dbms& operator=(const Dbms&) = delete;
 
-	void updateFileStructure(bool forceUpdate = false);
-	void insert(uint32_t key, Record record);
-	void updateRecord(uint32_t key, Record record);
-	void updateKey(uint32_t oldKey, uint32_t newKey);
-	AreaRecord remove(uint32_t key);
-	void read(uint32_t key);
+	void UpdateFileStructure(bool forceUpdate = false);
+	void Insert(unsigned key, Record record);
+	void UpdateRecord(unsigned key, Record record);
+	void UpdateKey(unsigned oldKey, unsigned newKey);
+	AreaRecord Remove(unsigned key);
+	void Read(unsigned key);
 
-	void printIndex() const;
-	void printPrimary() const;
-	void printDiskPage() const;
-	void printOverflow() const;
-	void printAll() const;
+	void PrintAll() const;
 
-	void printDiskOperations(bool resetCounter);
+	void PrintDiskOperations(bool resetCounter);
 
 	~Dbms();
 };

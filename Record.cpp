@@ -9,23 +9,23 @@ Record::Record(const double& radius, const double& height) : Record(std::pair<do
 {
 }
 
-void Record::updateInput(const double& radius, const double& height)
+void Record::UpdateInput(const double& radius, const double& height)
 {
-	this->volume = input.first * input.first * pi * input.second;
+	this->volume = radius * radius * pi * height;
 }
 
-void Record::updateInput(Record record)
+void Record::UpdateInput(Record record)
 {
-	this->input = record.getInput();
-	this->volume = record.getVolume();
+	this->input = record.GetInput();
+	this->volume = record.GetVolume();
 }
 
-std::pair<double, double> Record::getInput()
+std::pair<double, double> Record::GetInput()
 {
 	return this->input;
 }
 
-double Record::getVolume() const
+double Record::GetVolume() const
 {
 	return this->volume;
 }

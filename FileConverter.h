@@ -7,14 +7,14 @@ class FileConverter
 {
 	std::string directory;
 
-	static bool isTextfileValid(const std::string& filename);
-	static bool areStreamsOpened(std::ifstream& input, std::ofstream& output);
+	static bool IsTextFileValid(const std::string& filename);
+	static bool AreStreamsOpened(std::ifstream& input, std::ofstream& output);
 
 public:
 	explicit FileConverter(std::string directory) : directory(std::move(directory))
 	{
 	}
 
-	std::string textToBinary(std::string filename) const;
-	std::string binaryToText(std::string filename) const;
+	std::string TextToBinary(std::string filename) const;
+	std::string BinaryToText(std::string filename) const;
 };

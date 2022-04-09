@@ -39,7 +39,7 @@ size_t FileUtils::GetFileLength(std::ifstream& file)
 	const std::streampos length = file.tellg();
 
 	MoveCursorTo(previousPosition, file);
-	return static_cast<size_t>(length);
+	return length;
 }
 
 size_t FileUtils::GetFileLength(std::ofstream& file)
@@ -50,7 +50,7 @@ size_t FileUtils::GetFileLength(std::ofstream& file)
 	const std::streampos length = file.tellp();
 
 	MoveCursorTo(previousPosition, file);
-	return static_cast<size_t>(length);
+	return length;
 }
 
 void FileUtils::ChangeFileExtension(const std::string& filename, const std::string& newExtenstion, const bool removeOldFileIfExists)

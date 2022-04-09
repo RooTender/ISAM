@@ -22,7 +22,7 @@ int main()
 	const std::uniform_int_distribution<unsigned> distribution(0, 9);
 	std::random_device device;
 	std::mt19937 engine(device());
-	auto getRandomNumber = [&]() {return distribution(engine); };
+	auto getRandomNumber = [&] {return distribution(engine); };
 
 	unsigned blockingFactor;
 	double alpha, maxOverflowOccupation;
